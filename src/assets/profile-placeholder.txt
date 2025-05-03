@@ -1,0 +1,10 @@
+This is a placeholder file. 
+
+Please replace this with your actual profile image file (like profile.jpg or profile.png).
+The image should ideally be:
+- Square or slightly rectangular
+- High resolution (at least 500x500 pixels)
+- With a transparent or solid background
+- Professional looking
+
+After adding your image, you can delete this placeholder file.
