@@ -3,10 +3,8 @@ import { Github as GitHub, Linkedin, Mail, Phone, ChevronDown, Code, Database, S
 import ParallaxEffect from './ParallaxEffect';
 import AnimatedProfileFrame from './AnimatedProfileFrame';
 import TechCard from './TechCard';
-// Import your profile picture - replace this with your actual image path
-// import profileImage from '../assets/profile.jpg';
-// Temporary placeholder until you add your image
-const profileImage = '/src/assets/img1.png';
+// Import your profile picture
+import profileImage from '../assets/img1.png';
 
 const Hero: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
