@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ExternalLink, ArrowRight, Star, Github } from 'lucide-react';
 import MovingStarsBackground from './MovingStarsBackground';
+import Card3DTilt from './Card3DTilt';
+import MagneticButton from './MagneticButton';
 
 interface ProjectProps {
   title: string;
@@ -66,95 +68,94 @@ const ProjectCard: React.FC<ProjectProps> = ({ title, description, image, techno
   }, []);
 
   return (
-    <div
-      ref={cardRef}
-      className="group relative overflow-hidden rounded-2xl bg-gray-900/60 shadow-xl transition-all duration-500 ease-out opacity-0 translate-y-10 backdrop-blur-sm border border-blue-900/30 hover:shadow-blue-500/20"
-      style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.1)' }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Featured badge */}
-      <div className="absolute top-4 left-4 z-10">
-        <div className="flex items-center gap-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg border border-blue-500/50"
-             style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)' }}>
-          <Star size={12} className="animate-pulse" />
-          <span>Featured</span>
+    <Card3DTilt maxTilt={8} scale={1.03} className="w-full h-full">
+      <div
+        ref={cardRef}
+        className="group relative overflow-hidden rounded-2xl glass-morph shadow-2xl transition-all duration-500 ease-out opacity-0 translate-y-10 border border-blue-500/20 hover:border-blue-400/40 h-full"
+        style={{ boxShadow: '0 0 30px rgba(59, 130, 246, 0.15)' }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Featured badge */}
+        <div className="absolute top-4 left-4 z-20">
+          <div className="flex items-center gap-1 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-gradient text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-blue-400/30"
+            style={{ boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)' }}>
+            <Star size={12} className="glow-pulse" />
+            <span>Featured</span>
+          </div>
         </div>
-      </div>
 
-      {/* Image container with overlay */}
-      <div className="relative aspect-video overflow-hidden">
-        <img
-          src={image}
-          alt={title}
-          className={`w-full h-full object-cover object-center transition-all duration-700 ease-out ${isHovered ? 'scale-110 blur-sm' : 'scale-100'}`}
-        />
-        <div className={`absolute inset-0 bg-gradient-to-t from-blue-900/90 via-black/70 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-95' : 'opacity-80'}`}></div>
+        {/* Image container with overlay */}
+        <div className="relative aspect-video overflow-hidden">
+          <img
+            src={image}
+            alt={title}
+            className={`w-full h-full object-cover object-center transition-all duration-700 ease-out ${isHovered ? 'scale-110 blur-sm brightness-75' : 'scale-100'}`}
+          />
+          <div className={`absolute inset-0 bg-gradient-to-t from-blue-900/95 via-black/80 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-90'}`}></div>
 
-        {/* Overlay content that appears on hover */}
-        <div className={`absolute inset-0 flex flex-col justify-center items-center p-6 transition-all duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-          <p className="text-white text-center mb-6 max-w-xs">{description}</p>
-          <div className="flex gap-4">
+          {/* Overlay content that appears on hover */}
+          <div className={`absolute inset-0 flex flex-col justify-center items-center p-6 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+            <p className="text-white text-center mb-6 max-w-xs leading-relaxed">{description}</p>
+            <div className="flex gap-4">
+              <MagneticButton
+                href={liveUrl}
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full font-medium transition-all duration-300 hover:shadow-xl flex items-center gap-2 border border-blue-400/50"
+              >
+                <ExternalLink size={16} /> <span>Live Demo</span>
+              </MagneticButton>
+              {codeUrl && (
+                <MagneticButton
+                  href={codeUrl}
+                  className="px-5 py-2.5 bg-gradient-to-r from-purple-900/90 to-purple-800/90 text-white rounded-full font-medium transition-all duration-300 hover:shadow-xl flex items-center gap-2 border border-purple-500/50"
+                >
+                  <Github size={16} /> <span>View Code</span>
+                </MagneticButton>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Card content */}
+        <div className="p-6 relative bg-gradient-to-t from-gray-900/98 via-gray-900/95 to-gray-900/80 backdrop-blur-md">
+          <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300 mb-3 group-hover:from-blue-200 group-hover:to-purple-200 transition-all duration-300"
+            style={{ textShadow: '0 0 10px rgba(59, 130, 246, 0.4)' }}>{title}</h3>
+
+          {/* Technologies */}
+          <div className="flex flex-wrap gap-2 mb-6 stagger-animation">
+            {technologies.map((tech, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 text-xs font-medium rounded-full glass-morph text-blue-300 border border-blue-700/50 transition-all duration-300 hover:bg-blue-800/40 hover:scale-105 hover:border-blue-600/60"
+                style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.15)' }}
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+
+          {/* Links */}
+          <div className="flex justify-between items-center">
             <a
               href={liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 bg-blue-600 text-white rounded-full font-medium transition-all duration-300 hover:bg-blue-700 hover:scale-105 flex items-center gap-1 border border-blue-500/50"
-              style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)' }}
+              className="inline-flex items-center gap-1 text-blue-400 font-medium transition-all duration-300 hover:text-blue-300 hover:translate-x-1 animated-underline"
+              aria-label={`View ${title} live demo`}
             >
-              <ExternalLink size={16} /> <span>Live Demo</span>
+              Explore Project <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
             </a>
-            {codeUrl && (
-              <a
-                href={codeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-purple-900/80 text-white rounded-full font-medium transition-all duration-300 hover:bg-purple-800 hover:scale-105 flex items-center gap-1 border border-purple-500/50"
-                style={{ boxShadow: '0 0 10px rgba(124, 58, 237, 0.3)' }}
-              >
-                <Github size={16} /> <span>View Code</span>
-              </a>
-            )}
+
+            {/* Animated border line */}
+            <div className="h-1 w-0 bg-gradient-to-r from-blue-500 to-purple-600 group-hover:w-1/3 transition-all duration-500 rounded-full"></div>
           </div>
         </div>
+
+        {/* Animated corner accents */}
+        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       </div>
-
-      {/* Card content */}
-      <div className="p-6 relative -mt-20 bg-gradient-to-t from-gray-900/95 via-gray-900/95 to-transparent backdrop-blur-sm">
-        <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors duration-300"
-            style={{ textShadow: '0 0 8px rgba(59, 130, 246, 0.3)' }}>{title}</h3>
-
-        {/* Technologies */}
-        <div className="flex flex-wrap gap-2 mb-6 stagger-fade-in">
-          {technologies.map((tech, index) => (
-            <span
-              key={index}
-              className="px-3 py-1 text-xs font-medium rounded-full bg-blue-900/40 text-blue-300 border border-blue-800/50 transition-all duration-300 hover:bg-blue-800/60"
-              style={{ boxShadow: '0 0 8px rgba(59, 130, 246, 0.1)' }}
-            >
-              {tech}
-            </span>
-          ))}
-        </div>
-
-        {/* Links */}
-        <div className="flex justify-between items-center">
-          <a
-            href={liveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-blue-400 font-medium transition-all duration-300 hover:text-blue-300 hover:translate-x-1"
-            aria-label={`View ${title} live demo`}
-            style={{ textShadow: '0 0 8px rgba(59, 130, 246, 0.2)' }}
-          >
-            Explore Project <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
-          </a>
-
-          {/* Animated border line */}
-          <div className="h-1 w-0 bg-gradient-to-r from-blue-500 to-purple-600 group-hover:w-1/3 transition-all duration-500 rounded-full"></div>
-        </div>
-      </div>
-    </div>
+    </Card3DTilt>
   );
 };
 

@@ -11,6 +11,9 @@ import Particles from './components/Particles';
 import MovingStarsBackground from './components/MovingStarsBackground';
 import ScrollAnimationWrapper from './components/ScrollAnimationWrapper';
 import ParallaxEffect from './components/ParallaxEffect';
+import CursorTrail from './components/CursorTrail';
+import SpotlightCursor from './components/SpotlightCursor';
+import ScrollProgressIndicator from './components/ScrollProgressIndicator';
 import { initAllAnimations } from './utils/scrollAnimations';
 
 function App() {
@@ -139,9 +142,14 @@ function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="min-h-screen bg-black"
+            className="min-h-screen bg-black relative"
           >
+            {/* Aurora background effect */}
+            <div className="aurora-bg" />
+
             <Particles />
+            <CursorTrail color="rgba(59, 130, 246, 0.5)" size={6} trailLength={15} />
+            <SpotlightCursor />
 
             {/* Main content */}
             <motion.div
@@ -215,6 +223,9 @@ function App() {
                 boxShadow: '0 0 5px rgba(59, 130, 246, 0.8)'
               }}
             />
+
+            {/* Scroll Progress Indicator */}
+            <ScrollProgressIndicator />
 
             {/* Scroll to top button with enhanced effects */}
             <ParallaxEffect direction="up" factor={0.05} speed="fast">

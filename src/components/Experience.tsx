@@ -13,24 +13,37 @@ interface ExperienceItem {
 
 const experiences: ExperienceItem[] = [
   {
+    title: "AI Engineer Intern",
+    company: "AI Renon (bangalore)",
+    location: "Bangalore",
+    duration: "Present",
+    description: [
+      "Clarification Agent - Project Friday: Developed an intelligent query clarification agent using LangChain and Azure OpenAI that provides contextual summaries, SQL explanations, and follow-up suggestions, enabling more effective data querying and analysis.",
+      "Validation Module - Project Friday: Implemented a robust SQL query validation framework utilizing Large Language Models (LLMs), SQLGlot, and Metabase execution. Designed and developed a comprehensive 3-step validation pipeline that ensures data integrity through syntax, semantic, intent, and execution validation stages. Engineered intelligent error recovery mechanisms with context-aware correction strategies and configurable retry logic, built cross-database support for PostgreSQL and MongoDB with dialect-specific validation rules.",
+      "Automated Metadata Enhancement for RAG System Optimization: Designed and implemented automated Python scripts to enhance database metadata descriptions using LLM-powered generation strategies, improving RAG system column performance from 0.48 to 0.81 (69% improvement). Created intelligent prompt engineering workflows that automatically generate enriched column descriptions by combining analytical insights, keyword optimization, and business value mapping.",
+      "Implemented security guardrails to prevent destructive operations and maintained high query correction success rates while ensuring data integrity across complex multi-database environments."
+    ],
+    skills: ["LangChain", "Azure OpenAI", "SQL", "Python", "RAG", "LLM", "MongoDB", "PostgreSQL", "SQLGlot", "Metabase"]
+  },
+  {
     title: "Engineering Intern",
     company: "Ripik.ai",
     location: "Noida",
-    duration: "Present",
+    duration: "2025/01 TO 2025/04",
     description: [
-      "AI-Powered Detection: Engineered a Python system using Google Gemini API and multithreading to automate analysis of 100+ images/day, compressing files (10% JPEG quality) and parallelizing uploads (150 threads) for 80% faster manual review. Structured JSON outputs with AI explanations enabled rapid auditing.",
-      "Cost-Optimized Cloud Storage: Designed an AWS S3 image compression pipeline with Boto3 and PIL, reducing storage costs by 60% via metadata-preserving compression (40% quality) and parallel processing (150 workers). Tracked 10K+ files via automated logs.",
-      "Container Health Monitoring System: Developed and implemented an AWS Lambda monitoring solution that checks critical container health status and automatically sends alerts through Slack and SNS channels, improving system reliability and reducing downtime through proactive monitoring",
+      "AI-Powered Detection: Engineered a Python system using Google Gemini API and multithreading to automate analysis of 100+ images/day, compressing files (10% JPEG quality) and parallelizing uploads (150 threads) for 80% faster manual review. Structured JSON outputs with AI explanations enabled rapid auditing.",
+      "Cost-Optimized Cloud Storage: Designed an AWS S3 image compression pipeline with Boto3 and PIL, reducing storage costs by 60% via metadata-preserving compression (40% quality) and parallel processing (150 workers). Tracked 10K+ files via automated logs.",
+      "Container Health Monitoring System: Developed and implemented an AWS Lambda monitoring solution that checks critical container health status and automatically sends alerts through Slack and SNS channels, improving system reliability and reducing downtime through proactive monitoring.",
       "Automated data pipelines for preprocessing and transforming raw data, reducing manual effort by 30% and improving workflow efficiency."
     ],
-    skills: ["Python", "Computer Vision", "Streamlit", "PyTorch", "Git"]
+    skills: ["Python", "Google Gemini API", "AWS S3", "Boto3", "PIL", "AWS Lambda", "Streamlit"]
   }
 ];
 
 const Experience: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [animatedItems, setAnimatedItems] = useState<{[key: number]: boolean}>({});
+  const [animatedItems, setAnimatedItems] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -105,7 +118,7 @@ const Experience: React.FC = () => {
             </span>
           </div>
           <h2 className="text-4xl sm:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400"
-              style={{ textShadow: '0 0 15px rgba(59, 130, 246, 0.3)' }}>
+            style={{ textShadow: '0 0 15px rgba(59, 130, 246, 0.3)' }}>
             Professional Experience
           </h2>
           <div className="w-24 h-1.5 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mb-8 rounded-full animate-pulse-slow"></div>
@@ -118,9 +131,8 @@ const Experience: React.FC = () => {
           {experiences.map((exp, index) => (
             <div
               key={index}
-              className={`relative pl-10 mb-16 ${
-                index !== experiences.length - 1 ? 'before:absolute before:left-3 before:top-6 before:bottom-0 before:w-0.5 before:bg-gradient-to-b before:from-blue-600 before:to-purple-600 before:opacity-70' : ''
-              }`}
+              className={`relative pl-10 mb-16 ${index !== experiences.length - 1 ? 'before:absolute before:left-3 before:top-6 before:bottom-0 before:w-0.5 before:bg-gradient-to-b before:from-blue-600 before:to-purple-600 before:opacity-70' : ''
+                }`}
             >
               {/* Timeline node with pulse effect */}
               <div
@@ -129,7 +141,7 @@ const Experience: React.FC = () => {
               >
                 <div className="relative">
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-110"
-                       style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' }}>
+                    style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' }}>
                     <Briefcase size={16} className="text-white" />
                   </div>
                   {activeIndex === index && (
@@ -140,9 +152,8 @@ const Experience: React.FC = () => {
 
               {/* Experience card with enhanced styling */}
               <div
-                className={`bg-gray-900/60 rounded-xl shadow-xl p-8 transform transition-all duration-500 backdrop-blur-sm border border-blue-900/30 ${
-                  activeIndex === index ? 'translate-x-2 scale-[1.02] shadow-blue-500/20' : 'hover:shadow-blue-500/10'
-                }`}
+                className={`bg-gray-900/60 rounded-xl shadow-xl p-8 transform transition-all duration-500 backdrop-blur-sm border border-blue-900/30 ${activeIndex === index ? 'translate-x-2 scale-[1.02] shadow-blue-500/20' : 'hover:shadow-blue-500/10'
+                  }`}
                 style={{
                   boxShadow: activeIndex === index ? '0 0 20px rgba(59, 130, 246, 0.2)' : 'none'
                 }}
@@ -153,12 +164,12 @@ const Experience: React.FC = () => {
                   <div className="mb-4 md:mb-0">
                     <div className="flex items-center mb-2">
                       <div className="w-10 h-10 rounded-full bg-blue-900/40 flex items-center justify-center mr-3"
-                           style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)' }}>
+                        style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)' }}>
                         <Award size={20} className="text-blue-400" />
                       </div>
                       <div>
                         <h3 className="text-2xl font-bold text-white group-hover:text-blue-300 transition-colors duration-300"
-                            style={{ textShadow: '0 0 8px rgba(59, 130, 246, 0.3)' }}>{exp.title}</h3>
+                          style={{ textShadow: '0 0 8px rgba(59, 130, 246, 0.3)' }}>{exp.title}</h3>
                         <p className="text-blue-400 font-medium">{exp.company}</p>
                       </div>
                     </div>
@@ -183,9 +194,8 @@ const Experience: React.FC = () => {
                     {exp.description.map((item, i) => (
                       <li
                         key={i}
-                        className={`flex items-start group transition-all duration-500 ${
-                          animatedItems[index] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                        }`}
+                        className={`flex items-start group transition-all duration-500 ${animatedItems[index] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                          }`}
                         style={{ transitionDelay: `${i * 100}ms` }}
                       >
                         <div className="w-6 h-6 rounded-full bg-blue-900/40 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-blue-800/60 transition-colors duration-300 border border-blue-800/50">
@@ -205,9 +215,8 @@ const Experience: React.FC = () => {
                       {exp.skills.map((skill, i) => (
                         <span
                           key={i}
-                          className={`px-3 py-1 text-xs font-medium rounded-full bg-blue-900/40 text-blue-300 border border-blue-800/50 transition-all duration-300 hover:bg-blue-800/60 ${
-                            animatedItems[index] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                          }`}
+                          className={`px-3 py-1 text-xs font-medium rounded-full bg-blue-900/40 text-blue-300 border border-blue-800/50 transition-all duration-300 hover:bg-blue-800/60 ${animatedItems[index] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                            }`}
                           style={{
                             transitionDelay: `${(exp.description.length + i) * 100}ms`,
                             boxShadow: '0 0 10px rgba(59, 130, 246, 0.1)'
@@ -227,7 +236,7 @@ const Experience: React.FC = () => {
           <div className="relative pl-10">
             <div className="absolute -left-1 top-0">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg opacity-50"
-                   style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)' }}>
+                style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)' }}>
                 <div className="w-3 h-3 bg-white rounded-full"></div>
               </div>
             </div>

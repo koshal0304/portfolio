@@ -8,32 +8,32 @@ interface SkillCategory {
 
 const skillsData: SkillCategory[] = [
   {
-    category: 'Languages',
-    skills: ['Python', 'JavaScript', 'TypeScript', 'SQL', 'HTML', 'CSS', 'Java', 'C++']
+    category: 'Programming & Development',
+    skills: ['Python', 'JavaScript', 'TypeScript', 'Node.js', 'Express.js', 'ReactJS', 'HTML', 'CSS', 'Django', 'FastAPI', 'Java', 'C++']
   },
   {
     category: 'Frameworks & Libraries',
-    skills: ['React', 'Next.js', 'Node.js', 'Express', 'Streamlit', 'Flask', 'Django', 'Tailwind CSS', 'Bootstrap']
+    skills: ['React', 'Next.js', 'Node.js', 'Express', 'Streamlit', 'Flask', 'Django', 'Tailwind CSS', 'Bootstrap', 'LangChain']
   },
   {
     category: 'Data Science & ML',
-    skills: ['Pandas', 'NumPy', 'scikit-learn', 'TensorFlow', 'PyTorch', 'Matplotlib', 'Seaborn', 'LangChain', 'Hugging Face']
+    skills: ['Pandas', 'NumPy', 'scikit-learn', 'TensorFlow', 'PyTorch', 'Matplotlib', 'Seaborn', 'Hugging Face']
   },
   {
-    category: 'Databases',
-    skills: ['PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'SQLite', 'Supabase', 'Firebase', 'Vector Databases']
+    category: 'Database Management',
+    skills: ['PostgreSQL', 'MySQL', 'MongoDB', 'AWS S3', 'SQL', 'Redis', 'SQLite', 'Supabase', 'Firebase', 'Vector Databases']
   },
   {
     category: 'AI & Machine Learning',
-    skills: ['Computer Vision', 'Natural Language Processing', 'Generative AI', 'Large Language Models', 'YOLO', 'OpenCV', 'Transformers', 'Reinforcement Learning']
+    skills: ['Computer Vision', 'Natural Language Processing', 'Generative AI', 'Large Language Models', 'LLM', 'RAG', 'YOLO', 'SAM', 'ResNet', 'OpenCV', 'Transformers', 'Reinforcement Learning']
   },
   {
     category: 'Cloud & DevOps',
-    skills: ['AWS', 'Google Cloud', 'Docker', 'Kubernetes', 'CI/CD', 'GitHub Actions', 'Vercel', 'Netlify']
+    skills: ['AWS', 'AWS EC2', 'AWS Lambda', 'Google Cloud', 'Docker', 'Kubernetes', 'CI/CD', 'GitHub Actions', 'Vercel', 'Netlify']
   },
   {
     category: 'Tools & Platforms',
-    skills: ['Git', 'GitHub', 'Jupyter', 'VS Code', 'Postman', 'Figma', 'Notion', 'Jira', 'Slack']
+    skills: ['Git', 'GitHub', 'Jira', 'Tableau', 'Postman', 'Power BI', 'Jupyter', 'VS Code', 'Figma', 'Notion', 'Slack']
   }
 ];
 
@@ -66,38 +66,46 @@ const SkillBadge: React.FC<{ skill: string; index: number; category: string }> =
   }, [index]);
 
   const getGradient = () => {
-    switch(category) {
-      case 'Languages':
-        return 'from-blue-600 to-blue-800';
+    switch (category) {
+      case 'Programming & Development':
+        return 'from-blue-600 via-blue-500 to-blue-600';
       case 'Frameworks & Libraries':
-        return 'from-indigo-600 to-indigo-800';
-      case 'Databases':
-        return 'from-cyan-600 to-cyan-800';
+        return 'from-indigo-600 via-indigo-500 to-indigo-600';
+      case 'Database Management':
+        return 'from-cyan-600 via-cyan-500 to-cyan-600';
       case 'Data Science & ML':
-        return 'from-teal-600 to-teal-800';
+        return 'from-teal-600 via-teal-500 to-teal-600';
       case 'AI & Machine Learning':
-        return 'from-purple-600 to-purple-800';
+        return 'from-purple-600 via-purple-500 to-purple-600';
       case 'Cloud & DevOps':
-        return 'from-blue-600 to-indigo-800';
+        return 'from-blue-600 via-indigo-500 to-indigo-600';
       case 'Tools & Platforms':
-        return 'from-violet-600 to-violet-800';
+        return 'from-violet-600 via-violet-500 to-violet-600';
       default:
-        return 'from-blue-600 to-indigo-800';
+        return 'from-blue-600 via-indigo-500 to-indigo-600';
     }
   };
 
   return (
     <div
       ref={badgeRef}
-      className={`px-4 py-2 bg-gradient-to-r ${getGradient()} text-white rounded-lg shadow-md
-        transition-all duration-500 ease-out opacity-0 translate-y-4 transform hover:scale-105 hover:shadow-lg
-        border border-opacity-30 backdrop-blur-sm`}
+      className={`group relative px-4 py-2.5 bg-gradient-to-r ${getGradient()} text-white rounded-xl shadow-lg
+        transition-all duration-500 ease-out opacity-0 translate-y-4 transform hover:scale-110 hover:shadow-2xl
+        border border-white/20 backdrop-blur-sm animate-gradient overflow-hidden`}
       style={{
-        boxShadow: '0 0 15px rgba(59, 130, 246, 0.2)',
-        borderColor: 'rgba(255, 255, 255, 0.2)'
+        boxShadow: '0 0 20px rgba(59, 130, 246, 0.3), 0 4px 15px rgba(0, 0, 0, 0.2)',
       }}
     >
-      {skill}
+      {/* Shimmer effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+
+      {/* Text with shadow */}
+      <span className="relative z-10 font-medium text-sm" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+        {skill}
+      </span>
+
+      {/* Glow effect on hover */}
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     </div>
   );
 };
@@ -133,9 +141,16 @@ const SkillCategory: React.FC<SkillCategory & { index: number }> = ({ category, 
   return (
     <div
       ref={categoryRef}
-      className="mb-10 opacity-0 translate-y-10 transition-all duration-700 ease-out"
+      className="mb-12 opacity-0 translate-y-10 transition-all duration-700 ease-out group"
     >
-      <h3 className="text-xl font-semibold mb-4 text-blue-200" style={{ textShadow: '0 0 8px rgba(59, 130, 246, 0.3)' }}>{category}</h3>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full group-hover:w-16 transition-all duration-300" />
+        <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300 group-hover:from-blue-200 group-hover:to-purple-200 transition-all duration-300"
+          style={{ textShadow: '0 0 8px rgba(59, 130, 246, 0.3)' }}>
+          {category}
+        </h3>
+        <div className="flex-1 h-px bg-gradient-to-r from-blue-500/50 to-transparent" />
+      </div>
       <div className="flex flex-wrap gap-3">
         {skills.map((skill, i) => (
           <SkillBadge key={skill} skill={skill} index={i} category={category} />
@@ -192,7 +207,7 @@ const Skills: React.FC = () => {
             </span>
           </div>
           <h2 className="text-4xl sm:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400"
-              style={{ textShadow: '0 0 15px rgba(59, 130, 246, 0.3)' }}>
+            style={{ textShadow: '0 0 15px rgba(59, 130, 246, 0.3)' }}>
             Skills & Technologies
           </h2>
           <div className="w-24 h-1.5 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mb-8 rounded-full animate-pulse-slow"></div>

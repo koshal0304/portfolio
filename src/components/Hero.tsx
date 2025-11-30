@@ -3,6 +3,7 @@ import { Github as GitHub, Linkedin, Mail, Phone, ChevronDown, Code, Database, S
 import ParallaxEffect from './ParallaxEffect';
 import AnimatedProfileFrame from './AnimatedProfileFrame';
 import TechCard from './TechCard';
+import MagneticButton from './MagneticButton';
 // Import your profile picture
 import profileImage from '../assets/img1.png';
 
@@ -253,18 +254,21 @@ const Hero: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap justify-center lg:justify-start gap-4 mb-8 animate-fade-in" style={{ animationDelay: '0.8s' }}>
-              <a
+              <MagneticButton
                 href="#projects"
-                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/30 transform hover:scale-105"
+                className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 animate-gradient text-white rounded-xl font-medium transition-all duration-300 hover:shadow-2xl border border-blue-400/30 flex items-center gap-2"
               >
-                View My Work
-              </a>
-              <a
+                <span>View My Work</span>
+                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </MagneticButton>
+              <MagneticButton
                 href="#contact"
-                className="px-8 py-3 bg-transparent border-2 border-blue-500 text-blue-300 hover:text-white hover:bg-blue-600/30 rounded-lg font-medium transition-all duration-300 hover:shadow-lg transform hover:scale-105"
+                className="px-8 py-3.5 glass-morph-strong text-blue-200 hover:text-white rounded-xl font-medium transition-all duration-300 hover:shadow-2xl"
               >
                 Get In Touch
-              </a>
+              </MagneticButton>
             </div>
 
             <div className="flex justify-center lg:justify-start space-x-6 animate-fade-in" style={{ animationDelay: '1s' }}>
