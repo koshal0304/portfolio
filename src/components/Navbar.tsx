@@ -34,12 +34,13 @@ const Navbar: React.FC = () => {
   return (
     <>
       {/* Floating Logo - Always top left */}
-      <div className="fixed top-6 left-6 z-50 mix-blend-exclusion">
+      <div className="fixed top-6 left-6 z-50">
         <a href="#hero" aria-label="Home" className="block transform hover:scale-110 transition-transform duration-300">
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 8V32M6 20L16 8M6 20L16 32" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M24 8V32M24 20L34 8M24 20L34 32" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <img
+            src="/profile.jpeg"
+            alt="Koshal Kumar"
+            className="w-16 h-16 rounded-full object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.15)]"
+          />
         </a>
       </div>
 

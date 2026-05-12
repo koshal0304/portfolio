@@ -113,11 +113,22 @@ const SkillSphere: React.FC<SkillSphereProps> = ({ skills, activeCategory }) => 
             style={{ pointerEvents: 'auto' }}
           >
             <div
-              className={`font-mono text-xs whitespace-nowrap px-2 py-1 rounded transition-all duration-300 cursor-default select-none ${
+              className={`font-mono text-xs whitespace-nowrap px-2.5 py-1 rounded-full transition-all duration-500 cursor-default select-none ${
                 isActive
-                  ? 'text-primary border border-primary/30 bg-background/80 glow-cyan'
-                  : 'text-text-muted/40 border border-transparent'
+                  ? 'text-white'
+                  : 'text-white/20'
               }`}
+              style={
+                isActive
+                  ? {
+                      border: '1px solid rgba(0, 212, 255, 0.3)',
+                      background: 'rgba(0, 212, 255, 0.08)',
+                      boxShadow: '0 0 12px rgba(0, 212, 255, 0.15)',
+                    }
+                  : {
+                      border: '1px solid transparent',
+                    }
+              }
               title={skill.category}
             >
               {skill.name}
@@ -146,7 +157,12 @@ const MobileSkillGrid: React.FC<MobileSkillGridProps> = ({ skills, activeCategor
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ delay: i * 0.02 }}
-          className="font-mono text-xs border border-primary/30 text-primary px-3 py-1.5 rounded-full hover:glow-cyan transition-all duration-200"
+          className="font-mono text-xs px-3 py-1.5 rounded-full transition-all duration-300 cursor-default"
+          style={{
+            border: '1px solid rgba(0, 212, 255, 0.25)',
+            color: 'rgba(0, 212, 255, 0.8)',
+            background: 'rgba(0, 212, 255, 0.05)',
+          }}
         >
           {skill.name}
         </motion.span>
@@ -169,15 +185,42 @@ const Skills: React.FC = () => {
 
   return (
     <section id="skills" className="bg-surface/70 py-24 relative overflow-hidden">
+      {/* Background aurora */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div
+          className="float-orb"
+          style={{
+            width: '350px',
+            height: '350px',
+            background: 'var(--aurora-1)',
+            top: '30%',
+            left: '-8%',
+            opacity: 0.05,
+            animationDelay: '-6s',
+          }}
+        />
+      </div>
+
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-12"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">Technical Arsenal</h2>
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">
+            Technical Arsenal
+          </h2>
           <p className="text-text-muted font-body">Tools I've shipped real features with</p>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="aurora-divider mx-auto mt-6"
+            style={{ maxWidth: '100px', transformOrigin: 'center' }}
+          />
         </motion.div>
 
         {/* 3D Sphere or Mobile Grid */}
@@ -194,17 +237,26 @@ const Skills: React.FC = () => {
           )}
         </div>
 
-        {/* Category pills */}
+        {/* Category pills with neon active state */}
         <div className="flex flex-wrap justify-center gap-2">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`font-mono text-xs px-4 py-2 rounded-full transition-all duration-200 ${
+              className="font-mono text-xs px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
+              style={
                 activeCategory === cat
-                  ? 'bg-primary text-background'
-                  : 'border border-primary/30 text-text-muted hover:text-primary hover:border-primary/60'
-              }`}
+                  ? {
+                      background: 'var(--aurora-1)',
+                      color: 'var(--bg-deep)',
+                      boxShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
+                    }
+                  : {
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: 'rgba(255, 255, 255, 0.5)',
+                    }
+              }
+              data-cursor-text="Filter"
             >
               {cat}
             </button>

@@ -67,7 +67,7 @@ const ExternalLinkIcon: React.FC = () => (
   </svg>
 );
 
-// ─── Project Card with 3D Tilt ────────────────────────────────────
+// ─── Project Card with 3D Tilt + Holographic Shimmer ──────────────
 interface ProjectCardProps {
   project: Project;
   index: number;
@@ -76,15 +76,21 @@ interface ProjectCardProps {
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [glowPos, setGlowPos] = useState({ x: 50, y: 50 });
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
     setTilt((prev) => ({
-      x: prev.x + (y * -8 - prev.x) * 0.1,
-      y: prev.y + (x * 8 - prev.y) * 0.1,
+      x: prev.x + (y * -12 - prev.x) * 0.15,
+      y: prev.y + (x * 12 - prev.y) * 0.15,
     }));
+    // Track glow position for spotlight effect
+    setGlowPos({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    });
   }, []);
 
   const handleMouseLeave = useCallback(() => {
@@ -94,59 +100,77 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
   return (
     <motion.div
       ref={cardRef}
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 50, filter: 'blur(6px)' }}
+      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+      transition={{ duration: 0.7, delay: index * 0.12, ease: [0.16, 1, 0.3, 1] }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="bg-surface border border-surface-elevated rounded-xl p-6 cursor-default transition-all duration-300 hover:border-primary/40 hover:shadow-[0_0_20px_rgba(0,212,255,0.15)]"
+      className="glass-liquid holo-card rounded-xl p-6 cursor-default relative group"
       style={{
         transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-        transition: 'transform 500ms ease, border-color 300ms ease, box-shadow 300ms ease',
+        transformStyle: 'preserve-3d',
+        transition: 'transform 100ms ease-out',
       }}
     >
-      <h3 className="font-display text-xl font-bold text-text-base mb-3">{project.name}</h3>
-      <p className="text-text-muted font-body text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
+      {/* Spotlight glow that follows cursor */}
+      <div
+        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{
+          background: `radial-gradient(400px circle at ${glowPos.x}% ${glowPos.y}%, rgba(0, 212, 255, 0.06), transparent 50%)`,
+        }}
+      />
 
-      {/* Tech tags */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        {project.techStack.map((tech) => (
-          <span
-            key={tech}
-            className="font-mono text-xs border border-primary/30 text-primary px-2 py-1 rounded-full"
-          >
-            {tech}
-          </span>
-        ))}
-      </div>
+      <div style={{ transform: 'translateZ(30px)', transformStyle: 'preserve-3d' }}>
+        <h3 className="font-display text-xl font-bold text-white mb-3 tracking-tight">{project.name}</h3>
+        <p className="text-white/60 font-body text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
 
-      {/* Links */}
-      <div className="flex gap-3">
-        {project.githubUrl && (
-          <a
-            href={project.githubUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border border-surface-elevated text-text-muted hover:text-primary hover:border-primary transition-all px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1"
-            aria-label={`View ${project.name} on GitHub`}
-          >
-            <GitHubIcon />
-            GitHub
-          </a>
-        )}
-        {project.liveDemoUrl && (
-          <a
-            href={project.liveDemoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border border-surface-elevated text-text-muted hover:text-primary hover:border-primary transition-all px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1"
-            aria-label={`View ${project.name} live demo`}
-          >
-            <ExternalLinkIcon />
-            Live Demo
-          </a>
-        )}
+        {/* Tech tags */}
+        <div className="flex flex-wrap gap-2 mb-5" style={{ transform: 'translateZ(15px)' }}>
+          {project.techStack.map((tech) => (
+            <span
+              key={tech}
+              className="font-mono text-[10px] px-3 py-1.5 rounded-full uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_10px_rgba(0,212,255,0.2)]"
+              style={{
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.7)',
+                background: 'rgba(255,255,255,0.03)',
+              }}
+            >
+              {tech}
+            </span>
+          ))}
+        </div>
+
+        {/* Links */}
+        <div className="flex gap-3" style={{ transform: 'translateZ(20px)' }}>
+          {project.githubUrl && (
+            <a
+              href={project.githubUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-cursor-text="Open"
+              className="glass-liquid text-white hover:text-black hover:bg-white transition-all px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2 font-bold cursor-pointer"
+              aria-label={`View ${project.name} on GitHub`}
+            >
+              <GitHubIcon />
+              GitHub
+            </a>
+          )}
+          {project.liveDemoUrl && (
+            <a
+              href={project.liveDemoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-cursor-text="Open"
+              className="glass-liquid text-white hover:text-black hover:bg-white transition-all px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2 font-bold cursor-pointer"
+              aria-label={`View ${project.name} live demo`}
+            >
+              <ExternalLinkIcon />
+              Live Demo
+            </a>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -155,12 +179,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
 // ─── Main Projects Component ──────────────────────────────────────
 const Projects: React.FC = () => {
   const [featuredTilt, setFeaturedTilt] = useState({ x: 0, y: 0 });
+  const [featuredGlow, setFeaturedGlow] = useState({ x: 50, y: 50 });
 
   const handleFeaturedMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setFeaturedTilt({ x: y * -8, y: x * 8 });
+    setFeaturedTilt({ x: y * -6, y: x * 6 });
+    setFeaturedGlow({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    });
   }, []);
 
   const handleFeaturedMouseLeave = useCallback(() => {
@@ -169,43 +198,95 @@ const Projects: React.FC = () => {
 
   return (
     <section id="projects" className="bg-background/70 py-24 relative overflow-hidden">
+      {/* Background aurora */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div
+          className="float-orb"
+          style={{
+            width: '350px',
+            height: '350px',
+            background: 'var(--aurora-3)',
+            bottom: '10%',
+            left: '-5%',
+            opacity: 0.04,
+            animationDelay: '-8s',
+          }}
+        />
+      </div>
+
       <div className="container mx-auto px-4 max-w-5xl relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-16"
         >
           <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">Projects</h2>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="aurora-divider mx-auto mt-4"
+            style={{ maxWidth: '80px', transformOrigin: 'center' }}
+          />
         </motion.div>
 
-        {/* ═══ Featured project card (UNCHANGED) ═══ */}
+        {/* ═══ Featured project card ═══ */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 50, filter: 'blur(8px)' }}
+          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           onMouseMove={handleFeaturedMouseMove}
           onMouseLeave={handleFeaturedMouseLeave}
-          className="bg-surface-elevated border border-primary/20 rounded-2xl p-8 md:p-10 relative overflow-hidden cursor-default mb-10"
+          className="glass-liquid holo-card rounded-2xl p-8 md:p-10 relative overflow-hidden cursor-default mb-10 group"
           style={{
             transform: `perspective(1000px) rotateX(${featuredTilt.x}deg) rotateY(${featuredTilt.y}deg)`,
             transition: 'transform 400ms ease',
           }}
         >
-          {/* Top gradient border */}
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-secondary" />
+          {/* Aurora top border */}
+          <div
+            className="absolute top-0 left-0 right-0 h-[2px]"
+            style={{
+              background: 'linear-gradient(90deg, var(--aurora-1), var(--aurora-2), var(--aurora-3))',
+              boxShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
+            }}
+          />
+
+          {/* Spotlight glow */}
+          <div
+            className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+            style={{
+              background: `radial-gradient(600px circle at ${featuredGlow.x}% ${featuredGlow.y}%, rgba(0, 212, 255, 0.04), transparent 50%)`,
+            }}
+          />
 
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Left: Content */}
             <div>
+              <span
+                className="inline-block font-mono text-[10px] uppercase tracking-[0.3em] mb-3 px-3 py-1 rounded-full"
+                style={{
+                  border: '1px solid rgba(0, 212, 255, 0.3)',
+                  color: 'var(--aurora-1)',
+                }}
+              >
+                Featured
+              </span>
               <h3 className="font-display text-2xl font-bold text-text-base mb-4">{featuredProject.name}</h3>
               <p className="text-text-muted font-body text-sm leading-relaxed mb-6">{featuredProject.description}</p>
               <div className="flex flex-wrap gap-2">
                 {featuredProject.techStack.map((tech) => (
                   <span
                     key={tech}
-                    className="font-mono text-xs border border-primary/30 text-primary px-2 py-1 rounded-full"
+                    className="font-mono text-xs px-2 py-1 rounded-full"
+                    style={{
+                      border: '1px solid rgba(0, 212, 255, 0.25)',
+                      color: 'rgba(0, 212, 255, 0.8)',
+                    }}
                   >
                     {tech}
                   </span>
@@ -220,13 +301,20 @@ const Projects: React.FC = () => {
                 return (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.03 }}
-                    className={`aspect-square rounded-md ${
-                      isActive ? 'bg-primary/20 glow-cyan' : 'bg-surface border border-surface-elevated'
-                    }`}
+                    className="aspect-square rounded-md"
+                    style={{
+                      background: isActive
+                        ? 'rgba(0, 212, 255, 0.15)'
+                        : 'rgba(255, 255, 255, 0.02)',
+                      border: isActive
+                        ? '1px solid rgba(0, 212, 255, 0.3)'
+                        : '1px solid rgba(255, 255, 255, 0.05)',
+                      boxShadow: isActive ? '0 0 10px rgba(0, 212, 255, 0.15)' : 'none',
+                    }}
                   />
                 );
               })}
@@ -234,7 +322,7 @@ const Projects: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* ═══ Recovered projects bento grid ═══ */}
+        {/* ═══ Projects bento grid ═══ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {additionalProjects.map((project, index) => (
             <ProjectCard key={project.id} project={project} index={index} />
@@ -252,7 +340,9 @@ const Projects: React.FC = () => {
             href="https://github.com/koshal0304"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 border border-primary/30 text-text-muted hover:text-primary hover:border-primary transition-all px-6 py-3 rounded-lg font-mono text-sm"
+            data-cursor-text="Open"
+            className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-all px-6 py-3 rounded-lg font-mono text-sm cursor-pointer glow-button"
+            style={{ border: '1px solid rgba(255,255,255,0.1)' }}
           >
             <GitHubIcon />
             View More on GitHub

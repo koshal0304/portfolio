@@ -1,7 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { COLORS } from './constants';
-import { createKKTexture, createSpeechBubbleTexture } from './textures';
+import { createSpeechBubbleTexture } from './textures';
 
 export interface BoyRefs {
   group: THREE.Group;
@@ -35,7 +35,6 @@ const DeveloperBoy = forwardRef<BoyRefs>((_, ref) => {
     cursor: cursorRef.current,
   }));
 
-  const kkTexture = useMemo(() => createKKTexture(), []);
   const bubbleTexture = useMemo(() => createSpeechBubbleTexture(), []);
 
   const skinMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.skin }), []);
@@ -87,12 +86,6 @@ const DeveloperBoy = forwardRef<BoyRefs>((_, ref) => {
       <mesh position={[0, 0.04, 0]}>
         <cylinderGeometry args={[0.13, 0.15, 0.38, 8]} />
         <primitive object={hoodieMat} attach="material" />
-      </mesh>
-
-      {/* ── KK Monogram on chest ── */}
-      <mesh position={[0, 0.08, 0.151]}>
-        <planeGeometry args={[0.1, 0.08]} />
-        <meshBasicMaterial map={kkTexture} transparent opacity={0.9} />
       </mesh>
 
       {/* ── Left Arm ── */}

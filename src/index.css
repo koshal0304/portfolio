@@ -4,19 +4,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — Koshal Kumar Portfolio
+   OLED dark + neon accent system
+   ═══════════════════════════════════════════════════════════════════ */
 :root {
   --glow-cyan: 0, 212, 255;
   --glow-purple: 124, 58, 237;
   --glow-pink: 255, 42, 143;
+  --aurora-1: #00d4ff;
+  --aurora-2: #7c3aed;
+  --aurora-3: #ff2a8f;
+  --bg-deep: #030303;
+  --surface-1: #0A0A0A;
+  --surface-2: #121212;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   BASE
+   ═══════════════════════════════════════════════════════════════════ */
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 80px;
 }
 
 html, body {
-  background-color: #050505;
+  background-color: var(--bg-deep);
   color: #f0f0ff;
 }
 
@@ -26,6 +39,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  cursor: none;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -33,45 +47,355 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.02em;
 }
 
-/* Custom scrollbar */
+/* ═══════════════════════════════════════════════════════════════════
+   SCROLLBAR — minimal, glowing
+   ═══════════════════════════════════════════════════════════════════ */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: var(--bg-deep);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #222222;
-  border-radius: 3px;
+  background: linear-gradient(180deg, var(--aurora-1), var(--aurora-2));
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #444444;
+  background: linear-gradient(180deg, var(--aurora-1), var(--aurora-3));
 }
 
-/* Glassmorphism */
+/* ═══════════════════════════════════════════════════════════════════
+   GLASS MORPHISM SYSTEM — Depth-layered
+   ═══════════════════════════════════════════════════════════════════ */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
 .glass-panel {
-  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
+.glass-liquid {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-liquid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.08), transparent);
+  transform: skewX(-20deg);
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.glass-liquid:hover::before {
+  left: 150%;
+}
+
+.glass-liquid:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 12px 48px 0 rgba(0, 212, 255, 0.12),
+    0 0 80px rgba(0, 212, 255, 0.05),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HOLOGRAPHIC SHIMMER CARD — Unique rainbow refraction
+   ═══════════════════════════════════════════════════════════════════ */
+.holo-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.holo-card::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(0, 212, 255, 0.06) 60deg,
+    transparent 120deg,
+    rgba(124, 58, 237, 0.06) 180deg,
+    transparent 240deg,
+    rgba(255, 42, 143, 0.06) 300deg,
+    transparent 360deg
+  );
+  animation: holo-rotate 8s linear infinite;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.holo-card:hover::after {
+  opacity: 1;
+}
+
+@keyframes holo-rotate {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AURORA SECTION DIVIDER
+   ═══════════════════════════════════════════════════════════════════ */
+.aurora-divider {
+  position: relative;
+  height: 2px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.aurora-divider::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--aurora-1) 20%,
+    var(--aurora-2) 50%,
+    var(--aurora-3) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: aurora-slide 4s ease-in-out infinite;
+}
+
+@keyframes aurora-slide {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: 0% 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NEON TEXT SHIMMER — Unique text effect
+   ═══════════════════════════════════════════════════════════════════ */
+.text-shimmer {
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0.4) 0%,
+    rgba(255,255,255,1) 25%,
+    rgba(0,212,255,0.8) 50%,
+    rgba(255,255,255,1) 75%,
+    rgba(255,255,255,0.4) 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-text 4s ease-in-out infinite;
+}
+
+@keyframes shimmer-text {
+  0% { background-position: 300% center; }
+  100% { background-position: -300% center; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAGNETIC HOVER — Elements that attract toward cursor
+   ═══════════════════════════════════════════════════════════════════ */
+.magnetic-hover {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GLOW BUTTON — Neon-edged interactive buttons
+   ═══════════════════════════════════════════════════════════════════ */
+.glow-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glow-button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, var(--aurora-1), var(--aurora-2), var(--aurora-3), var(--aurora-1));
+  background-size: 400% 400%;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: gradient-border 3s ease infinite;
+}
+
+.glow-button:hover::before {
+  opacity: 1;
+}
+
+.glow-button::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: var(--bg-deep);
+  border-radius: inherit;
+  z-index: -1;
+}
+
+@keyframes gradient-border {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FLOATING LABEL — Form input animations
+   ═══════════════════════════════════════════════════════════════════ */
+.input-neon:focus {
+  box-shadow:
+    0 0 0 1px rgba(0, 212, 255, 0.5),
+    0 0 20px rgba(0, 212, 255, 0.15),
+    0 0 40px rgba(0, 212, 255, 0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PARTICLE TRAIL CURSOR BLEND MODE
+   ═══════════════════════════════════════════════════════════════════ */
 .blend-exclusion {
   mix-blend-mode: exclusion;
 }
 
-/* Prefers reduced motion */
+/* ═══════════════════════════════════════════════════════════════════
+   LOADING — Cinematic reveal
+   ═══════════════════════════════════════════════════════════════════ */
+.loading-glitch {
+  animation: loading-glitch-text 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+@keyframes loading-glitch-text {
+  0% { text-shadow: 2px 0 #00d4ff, -2px 0 #ff2a8f; }
+  25% { text-shadow: -2px 0 #00d4ff, 2px 0 #ff2a8f; }
+  50% { text-shadow: 1px -1px #00d4ff, -1px 1px #ff2a8f; }
+  75% { text-shadow: -1px 1px #00d4ff, 1px -1px #ff2a8f; }
+  100% { text-shadow: 2px 0 #00d4ff, -2px 0 #ff2a8f; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SECTION REVEAL — Cinematic viewport entrance
+   ═══════════════════════════════════════════════════════════════════ */
+.section-reveal {
+  opacity: 0;
+  transform: translateY(60px);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.section-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NOISE OVERLAY — Film grain texture
+   ═══════════════════════════════════════════════════════════════════ */
+.noise-overlay::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RIPPLE BUTTON — Tap feedback
+   ═══════════════════════════════════════════════════════════════════ */
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-container .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0);
+  animation: ripple-expand 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+@keyframes ripple-expand {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FLOATING ELEMENTS — Background orbs
+   ═══════════════════════════════════════════════════════════════════ */
+.float-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  animation: float-drift 20s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes float-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -40px) scale(1.1); }
+  50% { transform: translate(-20px, 20px) scale(0.9); }
+  75% { transform: translate(40px, 10px) scale(1.05); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STAGGER CHILDREN — For section content reveals
+   ═══════════════════════════════════════════════════════════════════ */
+.stagger-in > * {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: stagger-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.stagger-in > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-in > *:nth-child(2) { animation-delay: 80ms; }
+.stagger-in > *:nth-child(3) { animation-delay: 160ms; }
+.stagger-in > *:nth-child(4) { animation-delay: 240ms; }
+.stagger-in > *:nth-child(5) { animation-delay: 320ms; }
+.stagger-in > *:nth-child(6) { animation-delay: 400ms; }
+
+@keyframes stagger-fade-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PREFERS REDUCED MOTION
+   ═══════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -79,10 +403,58 @@ h1, h2, h3, h4, h5, h6 {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  body { cursor: auto; }
 }
 
-/* Selection */
+/* ═══════════════════════════════════════════════════════════════════
+   SELECTION
+   ═══════════════════════════════════════════════════════════════════ */
 ::selection {
-  background: rgba(255, 255, 255, 0.99);
-  color: #000;
+  background: rgba(0, 212, 255, 0.3);
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE OVERRIDES
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  body { cursor: auto; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BORDER GLOW ANIMATION — for section headers
+   ═══════════════════════════════════════════════════════════════════ */
+.border-glow {
+  position: relative;
+}
+
+.border-glow::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--aurora-1), var(--aurora-2));
+  border-radius: 2px;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PULSE RING — for timeline nodes
+   ═══════════════════════════════════════════════════════════════════ */
+.pulse-ring {
+  animation: pulse-ring-anim 2s ease-out infinite;
+}
+
+@keyframes pulse-ring-anim {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(0, 212, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 212, 255, 0);
+  }
 }

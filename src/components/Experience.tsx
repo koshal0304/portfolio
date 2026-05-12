@@ -58,26 +58,54 @@ const Experience: React.FC = () => {
 
   return (
     <section id="experience" ref={sectionRef} className="bg-background/70 py-24 relative overflow-hidden">
+      {/* Background aurora orb */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div
+          className="float-orb"
+          style={{
+            width: '400px',
+            height: '400px',
+            background: 'var(--aurora-2)',
+            top: '20%',
+            right: '-10%',
+            opacity: 0.05,
+            animationDelay: '-3s',
+          }}
+        />
+      </div>
+
       <div className="container mx-auto px-4 max-w-4xl relative z-10">
-        {/* Title */}
+        {/* Title with border glow */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-20"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">Career Timeline</h2>
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">
+            Career Timeline
+          </h2>
           <p className="text-text-muted font-body">End-to-end ownership, production deployments</p>
+          {/* Aurora underline */}
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="aurora-divider mx-auto mt-6"
+            style={{ maxWidth: '120px', transformOrigin: 'center' }}
+          />
         </motion.div>
 
         {/* Timeline */}
         <div className="relative">
-          {/* Center vertical line */}
+          {/* Center vertical line — neon gradient */}
           <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px">
-            <div className="absolute inset-0 bg-gradient-to-b from-primary to-secondary opacity-20" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[var(--aurora-1)] via-[var(--aurora-2)] to-[var(--aurora-3)] opacity-10" />
             <motion.div
               style={{ scaleY: lineScaleY, transformOrigin: 'top' }}
-              className="absolute inset-0 bg-gradient-to-b from-primary to-secondary"
+              className="absolute inset-0 bg-gradient-to-b from-[var(--aurora-1)] via-[var(--aurora-2)] to-[var(--aurora-3)]"
             />
           </div>
 
@@ -89,30 +117,41 @@ const Experience: React.FC = () => {
             return (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, x: isLeft ? -40 : 40 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, x: isLeft ? -50 : 50, filter: 'blur(6px)' }}
+                whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                 viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className={`relative mb-16 pl-16 md:pl-0 ${
                   isLeft ? 'md:pr-[calc(50%+2rem)] md:text-right' : 'md:pl-[calc(50%+2rem)]'
                 }`}
               >
-                {/* Timeline node */}
+                {/* Timeline node with pulse ring */}
                 <div className="absolute left-4 md:left-1/2 md:-translate-x-1/2 top-0 z-10">
-                  <div className="w-5 h-5 rounded-full bg-primary glow-cyan relative">
-                    <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-30" />
-                  </div>
+                  <div
+                    className="w-5 h-5 rounded-full pulse-ring relative"
+                    style={{
+                      background: 'var(--aurora-1)',
+                      boxShadow: '0 0 15px rgba(0, 212, 255, 0.5)',
+                    }}
+                  />
                 </div>
 
-                {/* Card */}
-                <div className="bg-surface border border-surface-elevated rounded-xl p-6 md:p-8 hover:border-primary/20 transition-colors duration-300">
+                {/* Card — holographic shimmer */}
+                <div className="glass-liquid holo-card rounded-xl p-6 md:p-8">
                   <div className={`flex flex-col ${isLeft ? 'md:items-end' : 'md:items-start'} gap-2 mb-4`}>
                     <h3 className="font-display text-xl font-bold text-text-base">{role.company}</h3>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-text-muted font-mono text-sm">{role.title}</span>
                       <span className="text-text-muted font-mono text-sm">· {role.location}</span>
                     </div>
-                    <span className="inline-block border border-primary/40 text-primary font-mono text-xs px-2 py-1 rounded-full">
+                    <span
+                      className="inline-block font-mono text-xs px-3 py-1 rounded-full"
+                      style={{
+                        border: '1px solid rgba(0, 212, 255, 0.3)',
+                        color: 'var(--aurora-1)',
+                        boxShadow: '0 0 10px rgba(0, 212, 255, 0.1)',
+                      }}
+                    >
                       {role.duration}
                     </span>
                   </div>
@@ -122,7 +161,14 @@ const Experience: React.FC = () => {
                   {/* Tags */}
                   <div className={`flex flex-wrap gap-2 mb-4 ${isLeft ? 'md:justify-end' : ''}`}>
                     {(isExpanded ? role.allTags : role.tags).map((tag) => (
-                      <span key={tag} className="font-mono text-xs border border-primary/30 text-primary/80 px-2 py-0.5 rounded-full">
+                      <span
+                        key={tag}
+                        className="font-mono text-xs px-2 py-0.5 rounded-full transition-all duration-300"
+                        style={{
+                          border: '1px solid rgba(0, 212, 255, 0.2)',
+                          color: 'rgba(0, 212, 255, 0.8)',
+                        }}
+                      >
                         {tag}
                       </span>
                     ))}
@@ -131,7 +177,9 @@ const Experience: React.FC = () => {
                   {/* Expand toggle */}
                   <button
                     onClick={() => setExpandedCard(isExpanded ? null : idx)}
-                    className="text-primary font-mono text-xs hover:underline mb-4"
+                    className="font-mono text-xs hover:underline mb-4 cursor-pointer transition-colors duration-300"
+                    style={{ color: 'var(--aurora-1)' }}
+                    data-cursor-text={isExpanded ? 'Less' : 'More'}
                   >
                     {isExpanded ? 'Collapse ↑' : `Show All ${role.projects.length} Projects ↓`}
                   </button>
@@ -143,18 +191,32 @@ const Experience: React.FC = () => {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.4 }}
+                        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                         className="overflow-hidden"
                       >
-                        <div className="space-y-4 pt-4 border-t border-surface-elevated">
+                        <div className="space-y-4 pt-4 border-t border-white/5">
                           {role.projects.map((project, pIdx) => (
-                            <div key={pIdx} className={`flex gap-3 ${isLeft ? 'md:flex-row-reverse md:text-right' : ''}`}>
-                              <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
+                            <motion.div
+                              key={pIdx}
+                              initial={{ opacity: 0, x: isLeft ? 20 : -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: pIdx * 0.05 }}
+                              className={`flex gap-3 ${isLeft ? 'md:flex-row-reverse md:text-right' : ''}`}
+                            >
+                              <div
+                                className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                                style={{
+                                  background: 'var(--aurora-1)',
+                                  boxShadow: '0 0 6px rgba(0, 212, 255, 0.4)',
+                                }}
+                              />
                               <div>
-                                <span className="text-primary font-semibold text-sm">{project.name}</span>
+                                <span className="font-semibold text-sm" style={{ color: 'var(--aurora-1)' }}>
+                                  {project.name}
+                                </span>
                                 <p className="text-text-muted text-sm">{project.description}</p>
                               </div>
-                            </div>
+                            </motion.div>
                           ))}
                         </div>
                       </motion.div>

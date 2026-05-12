@@ -1,19 +1,34 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-surface/70 border-t border-surface-elevated py-8">
+    <footer className="relative border-t border-white/5 py-10 overflow-hidden" style={{ background: 'var(--surface-1)' }}>
+      {/* Subtle aurora glow at top */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[1px]"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent)',
+        }}
+      />
+
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-text-muted text-sm font-mono text-center md:text-left">
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-white/30 text-sm font-mono text-center md:text-left"
+          >
             © 2026 Koshal Kumar — AI Engineer, Bengaluru
-          </p>
+          </motion.p>
 
           <div className="flex items-center gap-6">
             <a
               href="mailto:koshalkumar0304@gmail.com"
-              className="text-text-muted hover:text-primary transition-colors"
+              className="text-white/30 hover:text-white transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(0,212,255,0.4)] cursor-pointer"
               aria-label="Email"
+              data-cursor-text="Email"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="20" height="16" x="2" y="4" rx="2" />
@@ -24,8 +39,9 @@ const Footer: React.FC = () => {
               href="https://linkedin.com/in/koshal-kumar-970233240"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-text-muted hover:text-primary transition-colors"
+              className="text-white/30 hover:text-white transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(0,212,255,0.4)] cursor-pointer"
               aria-label="LinkedIn"
+              data-cursor-text="LinkedIn"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
@@ -37,8 +53,9 @@ const Footer: React.FC = () => {
               href="https://github.com/koshal0304"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-text-muted hover:text-primary transition-colors"
+              className="text-white/30 hover:text-white transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(0,212,255,0.4)] cursor-pointer"
               aria-label="GitHub"
+              data-cursor-text="GitHub"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
