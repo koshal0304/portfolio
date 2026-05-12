@@ -11,16 +11,11 @@ import Footer from './components/Footer';
 import HeroScene3D from './components/HeroScene3D';
 import LaptopStoryScene from './components/LaptopStoryScene';
 import SectionDivider from './components/SectionDivider';
+import Cursor3D from './components/Cursor3D';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
-  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
-  const [cursorLerpPos, setCursorLerpPos] = useState({ x: 0, y: 0 });
-  const [cursorEnlarged, setCursorEnlarged] = useState(false);
-  const [cursorText, setCursorText] = useState('');
-  const rafRef = useRef<number>(0);
-  const mouseRef = useRef({ x: 0, y: 0 });
 
   // Scroll progress for HeroScene3D
   const { scrollYProgress } = useScroll();
@@ -48,51 +43,6 @@ function App() {
     }, 40);
     return () => clearInterval(interval);
   }, []);
-
-  // Cursor animation loop with lerp for buttery smoothness
-  const animateCursor = useCallback(() => {
-    setCursorLerpPos((prev) => ({
-      x: prev.x + (mouseRef.current.x - prev.x) * 0.12,
-      y: prev.y + (mouseRef.current.y - prev.y) * 0.12,
-    }));
-    rafRef.current = requestAnimationFrame(animateCursor);
-  }, []);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
-      setCursorPos({ x: e.clientX, y: e.clientY });
-    };
-
-    const addHoverListeners = () => {
-      document.querySelectorAll('a, button, input, textarea, [role="button"]').forEach((el) => {
-        el.addEventListener('mouseenter', () => {
-          setCursorEnlarged(true);
-          // Check for data-cursor-text attribute
-          const text = el.getAttribute('data-cursor-text') || 'View';
-          setCursorText(text);
-        });
-        el.addEventListener('mouseleave', () => {
-          setCursorEnlarged(false);
-          setCursorText('');
-        });
-      });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    rafRef.current = requestAnimationFrame(animateCursor);
-
-    // Re-add listeners after DOM updates
-    const observer = new MutationObserver(addHoverListeners);
-    observer.observe(document.body, { childList: true, subtree: true });
-    addHoverListeners();
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      cancelAnimationFrame(rafRef.current);
-      observer.disconnect();
-    };
-  }, [animateCursor]);
 
   // Reduced motion check
   const [reducedMotion] = useState(() =>
@@ -244,41 +194,8 @@ function App() {
               <Footer />
             </div>
 
-            {/* Custom cursor - blend exclusion for premium effect */}
-            {!reducedMotion && (
-              <>
-                {/* Main cursor dot */}
-                <div
-                  className="fixed pointer-events-none z-50 hidden md:flex items-center justify-center rounded-full transition-all duration-300 ease-out blend-exclusion"
-                  style={{
-                    width: cursorEnlarged ? '80px' : '24px',
-                    height: cursorEnlarged ? '80px' : '24px',
-                    backgroundColor: 'white',
-                    transform: `translate(${cursorLerpPos.x - (cursorEnlarged ? 40 : 12)}px, ${cursorLerpPos.y - (cursorEnlarged ? 40 : 12)}px)`,
-                  }}
-                >
-                  <span
-                    className={`text-black text-[9px] font-bold uppercase tracking-[0.15em] transition-opacity duration-200 ${
-                      cursorEnlarged ? 'opacity-100' : 'opacity-0'
-                    }`}
-                  >
-                    {cursorText}
-                  </span>
-                </div>
-
-                {/* Trailing glow ring */}
-                <div
-                  className="fixed pointer-events-none z-[49] hidden md:block rounded-full"
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    transform: `translate(${cursorLerpPos.x - 20}px, ${cursorLerpPos.y - 20}px)`,
-                    transition: 'width 0.3s, height 0.3s',
-                  }}
-                />
-              </>
-            )}
+            {/* 3D Cursor — morphing icosahedron with particle trail */}
+            <Cursor3D reducedMotion={reducedMotion} />
           </motion.div>
         )}
       </AnimatePresence>
