@@ -1,228 +1,213 @@
-import React, { useEffect, useRef } from 'react';
-import MovingStarsBackground from './MovingStarsBackground';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
+import { motion } from 'framer-motion';
+import * as THREE from 'three';
 
-interface SkillCategory {
+interface SkillData {
+  name: string;
   category: string;
-  skills: string[];
 }
 
-const skillsData: SkillCategory[] = [
-  {
-    category: 'Programming & Development',
-    skills: ['Python', 'JavaScript', 'TypeScript', 'Node.js', 'Express.js', 'ReactJS', 'HTML', 'CSS', 'Django', 'FastAPI', 'Java', 'C++']
-  },
-  {
-    category: 'Frameworks & Libraries',
-    skills: ['React', 'Next.js', 'Node.js', 'Express', 'Streamlit', 'Flask', 'Django', 'Tailwind CSS', 'Bootstrap', 'LangChain']
-  },
-  {
-    category: 'Data Science & ML',
-    skills: ['Pandas', 'NumPy', 'scikit-learn', 'TensorFlow', 'PyTorch', 'Matplotlib', 'Seaborn', 'Hugging Face']
-  },
-  {
-    category: 'Database Management',
-    skills: ['PostgreSQL', 'MySQL', 'MongoDB', 'AWS S3', 'SQL', 'Redis', 'SQLite', 'Supabase', 'Firebase', 'Vector Databases']
-  },
-  {
-    category: 'AI & Machine Learning',
-    skills: ['Computer Vision', 'Natural Language Processing', 'Generative AI', 'Large Language Models', 'LLM', 'RAG', 'YOLO', 'SAM', 'ResNet', 'OpenCV', 'Transformers', 'Reinforcement Learning']
-  },
-  {
-    category: 'Cloud & DevOps',
-    skills: ['AWS', 'AWS EC2', 'AWS Lambda', 'Google Cloud', 'Docker', 'Kubernetes', 'CI/CD', 'GitHub Actions', 'Vercel', 'Netlify']
-  },
-  {
-    category: 'Tools & Platforms',
-    skills: ['Git', 'GitHub', 'Jira', 'Tableau', 'Postman', 'Power BI', 'Jupyter', 'VS Code', 'Figma', 'Notion', 'Slack']
-  }
+const ALL_SKILLS: SkillData[] = [
+  // AI/ML Core
+  { name: 'PyTorch', category: 'AI/ML Core' },
+  { name: 'TensorFlow', category: 'AI/ML Core' },
+  { name: 'scikit-learn', category: 'AI/ML Core' },
+  { name: 'Hugging Face', category: 'AI/ML Core' },
+  { name: 'LangChain', category: 'AI/ML Core' },
+  { name: 'LangGraph', category: 'AI/ML Core' },
+  { name: 'RAG Pipelines', category: 'AI/ML Core' },
+  { name: 'LLM Fine-tuning', category: 'AI/ML Core' },
+  { name: 'Prompt Engineering', category: 'AI/ML Core' },
+  { name: 'Computer Vision', category: 'AI/ML Core' },
+  { name: 'YOLO', category: 'AI/ML Core' },
+  { name: 'Sentence Transformers', category: 'AI/ML Core' },
+  { name: 'MLflow', category: 'AI/ML Core' },
+  { name: 'W&B', category: 'AI/ML Core' },
+  { name: 'DVC', category: 'AI/ML Core' },
+  // LLM & Agents
+  { name: 'OpenAI API', category: 'LLM & Agents' },
+  { name: 'Azure OpenAI', category: 'LLM & Agents' },
+  { name: 'Gemini API', category: 'LLM & Agents' },
+  { name: 'Pinecone', category: 'LLM & Agents' },
+  { name: 'FAISS', category: 'LLM & Agents' },
+  { name: 'ChromaDB', category: 'LLM & Agents' },
+  { name: 'LlamaIndex', category: 'LLM & Agents' },
+  { name: 'Vector Search', category: 'LLM & Agents' },
+  { name: 'Semantic Routing', category: 'LLM & Agents' },
+  // Backend & APIs
+  { name: 'Python', category: 'Backend & APIs' },
+  { name: 'Node.js', category: 'Backend & APIs' },
+  { name: 'TypeScript', category: 'Backend & APIs' },
+  { name: 'FastAPI', category: 'Backend & APIs' },
+  { name: 'Django', category: 'Backend & APIs' },
+  { name: 'REST APIs', category: 'Backend & APIs' },
+  { name: 'JWT/OAuth2', category: 'Backend & APIs' },
+  { name: 'Redis', category: 'Backend & APIs' },
+  { name: 'Celery', category: 'Backend & APIs' },
+  { name: 'WebSockets', category: 'Backend & APIs' },
+  { name: 'Prisma ORM', category: 'Backend & APIs' },
+  // Cloud & Infra
+  { name: 'AWS S3', category: 'Cloud & Infra' },
+  { name: 'AWS EC2', category: 'Cloud & Infra' },
+  { name: 'AWS Lambda', category: 'Cloud & Infra' },
+  { name: 'Docker', category: 'Cloud & Infra' },
+  { name: 'GitHub Actions', category: 'Cloud & Infra' },
+  { name: 'Boto3', category: 'Cloud & Infra' },
+  // Databases & Storage
+  { name: 'PostgreSQL', category: 'Databases & Storage' },
+  { name: 'MongoDB', category: 'Databases & Storage' },
+  { name: 'MySQL', category: 'Databases & Storage' },
+  { name: 'SQLGlot', category: 'Databases & Storage' },
+  // Data & Dev Tools
+  { name: 'Pandas', category: 'Data & Dev Tools' },
+  { name: 'NumPy', category: 'Data & Dev Tools' },
+  { name: 'OpenCV', category: 'Data & Dev Tools' },
+  { name: 'Metabase', category: 'Data & Dev Tools' },
+  { name: 'Postman', category: 'Data & Dev Tools' },
+  { name: 'GitHub', category: 'Data & Dev Tools' },
 ];
 
-const SkillBadge: React.FC<{ skill: string; index: number; category: string }> = ({ skill, index, category }) => {
-  const badgeRef = useRef<HTMLDivElement>(null);
+const CATEGORIES = ['All', 'AI/ML Core', 'LLM & Agents', 'Backend & APIs', 'Cloud & Infra', 'Databases & Storage', 'Data & Dev Tools'];
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => {
-            entry.target.classList.add('opacity-100', 'translate-y-0');
-            entry.target.classList.remove('opacity-0', 'translate-y-4');
-          }, index * 50);
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.1 }
-    );
+// Fibonacci sphere distribution
+function fibonacciSphere(count: number, radius: number): [number, number, number][] {
+  const points: [number, number, number][] = [];
+  const phi = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < count; i++) {
+    const y = 1 - (i / (count - 1)) * 2;
+    const r = Math.sqrt(1 - y * y);
+    const theta = phi * i;
+    points.push([r * Math.cos(theta) * radius, y * radius, r * Math.sin(theta) * radius]);
+  }
+  return points;
+}
 
-    if (badgeRef.current) {
-      observer.observe(badgeRef.current);
+// ─── 3D Skill Sphere ──────────────────────────────────────────────
+interface SkillSphereProps {
+  skills: SkillData[];
+  activeCategory: string;
+}
+
+const SkillSphere: React.FC<SkillSphereProps> = ({ skills, activeCategory }) => {
+  const groupRef = useRef<THREE.Group>(null);
+  const positions = useMemo(() => fibonacciSphere(skills.length, 5), [skills.length]);
+
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y += 0.002 * delta * 60;
     }
-
-    return () => {
-      if (badgeRef.current) {
-        observer.unobserve(badgeRef.current);
-      }
-    };
-  }, [index]);
-
-  const getGradient = () => {
-    switch (category) {
-      case 'Programming & Development':
-        return 'from-blue-600 via-blue-500 to-blue-600';
-      case 'Frameworks & Libraries':
-        return 'from-indigo-600 via-indigo-500 to-indigo-600';
-      case 'Database Management':
-        return 'from-cyan-600 via-cyan-500 to-cyan-600';
-      case 'Data Science & ML':
-        return 'from-teal-600 via-teal-500 to-teal-600';
-      case 'AI & Machine Learning':
-        return 'from-purple-600 via-purple-500 to-purple-600';
-      case 'Cloud & DevOps':
-        return 'from-blue-600 via-indigo-500 to-indigo-600';
-      case 'Tools & Platforms':
-        return 'from-violet-600 via-violet-500 to-violet-600';
-      default:
-        return 'from-blue-600 via-indigo-500 to-indigo-600';
-    }
-  };
+  });
 
   return (
-    <div
-      ref={badgeRef}
-      className={`group relative px-4 py-2.5 bg-gradient-to-r ${getGradient()} text-white rounded-xl shadow-lg
-        transition-all duration-500 ease-out opacity-0 translate-y-4 transform hover:scale-110 hover:shadow-2xl
-        border border-white/20 backdrop-blur-sm animate-gradient overflow-hidden`}
-      style={{
-        boxShadow: '0 0 20px rgba(59, 130, 246, 0.3), 0 4px 15px rgba(0, 0, 0, 0.2)',
-      }}
-    >
-      {/* Shimmer effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+    <group ref={groupRef}>
+      {skills.map((skill, i) => {
+        const isActive = activeCategory === 'All' || skill.category === activeCategory;
+        return (
+          <Html
+            key={skill.name}
+            position={positions[i]}
+            center
+            distanceFactor={12}
+            style={{ pointerEvents: 'auto' }}
+          >
+            <div
+              className={`font-mono text-xs whitespace-nowrap px-2 py-1 rounded transition-all duration-300 cursor-default select-none ${
+                isActive
+                  ? 'text-primary border border-primary/30 bg-background/80 glow-cyan'
+                  : 'text-text-muted/40 border border-transparent'
+              }`}
+              title={skill.category}
+            >
+              {skill.name}
+            </div>
+          </Html>
+        );
+      })}
+    </group>
+  );
+};
 
-      {/* Text with shadow */}
-      <span className="relative z-10 font-medium text-sm" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-        {skill}
-      </span>
+// ─── Mobile Skill Grid ────────────────────────────────────────────
+interface MobileSkillGridProps {
+  skills: SkillData[];
+  activeCategory: string;
+}
 
-      {/* Glow effect on hover */}
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+const MobileSkillGrid: React.FC<MobileSkillGridProps> = ({ skills, activeCategory }) => {
+  const filtered = activeCategory === 'All' ? skills : skills.filter((s) => s.category === activeCategory);
+  return (
+    <div className="flex flex-wrap gap-2 justify-center">
+      {filtered.map((skill, i) => (
+        <motion.span
+          key={skill.name}
+          initial={{ opacity: 0, scale: 0.8 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: i * 0.02 }}
+          className="font-mono text-xs border border-primary/30 text-primary px-3 py-1.5 rounded-full hover:glow-cyan transition-all duration-200"
+        >
+          {skill.name}
+        </motion.span>
+      ))}
     </div>
   );
 };
 
-const SkillCategory: React.FC<SkillCategory & { index: number }> = ({ category, skills, index }) => {
-  const categoryRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => {
-            entry.target.classList.add('opacity-100', 'translate-y-0');
-            entry.target.classList.remove('opacity-0', 'translate-y-10');
-          }, index * 100);
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (categoryRef.current) {
-      observer.observe(categoryRef.current);
-    }
-
-    return () => {
-      if (categoryRef.current) {
-        observer.unobserve(categoryRef.current);
-      }
-    };
-  }, [index]);
-
-  return (
-    <div
-      ref={categoryRef}
-      className="mb-12 opacity-0 translate-y-10 transition-all duration-700 ease-out group"
-    >
-      <div className="flex items-center gap-3 mb-5">
-        <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full group-hover:w-16 transition-all duration-300" />
-        <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300 group-hover:from-blue-200 group-hover:to-purple-200 transition-all duration-300"
-          style={{ textShadow: '0 0 8px rgba(59, 130, 246, 0.3)' }}>
-          {category}
-        </h3>
-        <div className="flex-1 h-px bg-gradient-to-r from-blue-500/50 to-transparent" />
-      </div>
-      <div className="flex flex-wrap gap-3">
-        {skills.map((skill, i) => (
-          <SkillBadge key={skill} skill={skill} index={i} category={category} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
+// ─── Main Skills Component ────────────────────────────────────────
 const Skills: React.FC = () => {
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('opacity-100');
-          entry.target.classList.remove('opacity-0');
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
   return (
-    <section id="skills" className="py-20 bg-black relative overflow-hidden">
-      {/* Moving stars background */}
-      <MovingStarsBackground starCount={80} />
+    <section id="skills" className="bg-surface/70 py-24 relative overflow-hidden">
+      <div className="container mx-auto px-4 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">Technical Arsenal</h2>
+          <p className="text-text-muted font-body">Tools I've shipped real features with</p>
+        </motion.div>
 
-      {/* Space-themed decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-blue-900/10 to-transparent"></div>
-      <div className="absolute -top-10 -right-10 w-60 h-60 bg-blue-500/5 rounded-full filter blur-3xl animate-pulse-slow"></div>
-      <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-purple-500/5 rounded-full filter blur-3xl animate-pulse-slow" style={{ animationDelay: '1.5s' }}></div>
-
-      <div
-        ref={sectionRef}
-        className="container mx-auto px-4 opacity-0 transition-opacity duration-1000 relative z-10"
-      >
-        <div className="text-center mb-16">
-          <div className="inline-block mb-4">
-            <span className="px-4 py-1 bg-blue-900/30 text-blue-300 text-sm font-medium rounded-full backdrop-blur-sm border border-blue-800/30">
-              Expertise
-            </span>
-          </div>
-          <h2 className="text-4xl sm:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400"
-            style={{ textShadow: '0 0 15px rgba(59, 130, 246, 0.3)' }}>
-            Skills & Technologies
-          </h2>
-          <div className="w-24 h-1.5 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mb-8 rounded-full animate-pulse-slow"></div>
-          <p className="max-w-2xl mx-auto text-blue-200 text-lg">
-            A comprehensive overview of my technical skills and proficiencies.
-          </p>
+        {/* 3D Sphere or Mobile Grid */}
+        <div className="h-[500px] md:h-[600px] mb-8">
+          {isMobile ? (
+            <div className="h-full flex items-center">
+              <MobileSkillGrid skills={ALL_SKILLS} activeCategory={activeCategory} />
+            </div>
+          ) : (
+            <Canvas camera={{ position: [0, 0, 14], fov: 60 }} dpr={[1, 1.5]}>
+              <ambientLight intensity={0.5} />
+              <SkillSphere skills={ALL_SKILLS} activeCategory={activeCategory} />
+            </Canvas>
+          )}
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          {skillsData.map((skillCategory, index) => (
-            <SkillCategory
-              key={skillCategory.category}
-              index={index}
-              {...skillCategory}
-            />
+        {/* Category pills */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`font-mono text-xs px-4 py-2 rounded-full transition-all duration-200 ${
+                activeCategory === cat
+                  ? 'bg-primary text-background'
+                  : 'border border-primary/30 text-text-muted hover:text-primary hover:border-primary/60'
+              }`}
+            >
+              {cat}
+            </button>
           ))}
         </div>
       </div>

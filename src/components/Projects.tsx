@@ -1,262 +1,263 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ExternalLink, ArrowRight, Star, Github } from 'lucide-react';
-import MovingStarsBackground from './MovingStarsBackground';
-import Card3DTilt from './Card3DTilt';
-import MagneticButton from './MagneticButton';
+import React, { useState, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
 
-interface ProjectProps {
-  title: string;
+interface Project {
+  id: string;
+  name: string;
   description: string;
-  image: string;
-  technologies: string[];
-  liveUrl: string;
-  codeUrl?: string;
+  techStack: string[];
+  githubUrl?: string;
+  liveDemoUrl?: string;
+  featured?: boolean;
 }
 
-const projects: ProjectProps[] = [
+const featuredProject: Project = {
+  id: 'object-detection',
+  name: 'AI-Powered Real-Time Object Detection & Monitoring',
+  description:
+    'Phone-usage detection app. RTSP video stream via OpenCV. Concurrent GPU inference via ThreadPoolExecutor with tenacity retries. Live Matplotlib/Seaborn dashboard. Full pipeline: stream capture → structured output → real-time display.',
+  techStack: ['Streamlit', 'Google Gemini API', 'OpenCV', 'PyTorch', 'ThreadPoolExecutor'],
+  featured: true,
+};
+
+const additionalProjects: Project[] = [
   {
-    title: 'Personal Knowledge Assistant',
-    description: 'AI-powered knowledge management system that helps users organize, retrieve, and generate insights from their personal documents and notes.',
-    image: 'https://images.pexels.com/photos/7567434/pexels-photo-7567434.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    technologies: ['Python', 'Streamlit', 'LangChain', 'OpenAI', 'Vector DB'],
-    liveUrl: 'https://personal-knowledge-assistant-g.streamlit.app/',
-    codeUrl: 'https://github.com/koshal0304/personal-knowledge-assistant'
+    id: 'knowledge-assistant',
+    name: 'Personal Knowledge Assistant',
+    description:
+      'AI-powered knowledge management system that helps users organize, retrieve, and generate insights from their personal documents and notes.',
+    techStack: ['Python', 'Streamlit', 'LangChain', 'OpenAI', 'Vector DB'],
+    githubUrl: 'https://github.com/koshal0304/personal-knowledge-assistant',
+    liveDemoUrl: 'https://personal-knowledge-assistant-g.streamlit.app/',
   },
   {
-    title: 'Webcam YOLO Object Detector',
-    description: 'Real-time object detection application using YOLO algorithm to identify objects through webcam feed with high accuracy and performance.',
-    image: 'https://images.pexels.com/photos/5483077/pexels-photo-5483077.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    technologies: ['Python', 'Streamlit', 'OpenCV', 'YOLO', 'Computer Vision'],
-    liveUrl: 'https://webcamyolodetector-l.streamlit.app/',
-    codeUrl: 'https://github.com/koshal0304/webcamyolodetector'
+    id: 'yolo-detector',
+    name: 'Webcam YOLO Object Detector',
+    description:
+      'Real-time object detection application using YOLO algorithm to identify objects through webcam feed with high accuracy and performance.',
+    techStack: ['Python', 'Streamlit', 'OpenCV', 'YOLO', 'Computer Vision'],
+    githubUrl: 'https://github.com/koshal0304/webcamyolodetector',
+    liveDemoUrl: 'https://webcamyolodetector-l.streamlit.app/',
   },
   {
-    title: 'Talent Scout AI Hiring Assistant',
-    description: 'AI-powered application that helps recruiters identify potential candidates based on resume analysis and job descriptions, streamlining the hiring process.',
-    image: 'https://images.pexels.com/photos/3184405/pexels-photo-3184405.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    technologies: ['Python', 'Streamlit', 'NLP', 'Machine Learning', 'Document Processing'],
-    liveUrl: 'https://talentscoutaihiringassistant.streamlit.app/',
-    codeUrl: 'https://github.com/koshal0304/talent-scout-ai'
-  }
+    id: 'talent-scout',
+    name: 'Talent Scout AI Hiring Assistant',
+    description:
+      'AI-powered application that helps recruiters identify potential candidates based on resume analysis and job descriptions, streamlining the hiring process.',
+    techStack: ['Python', 'Streamlit', 'NLP', 'Machine Learning', 'Document Processing'],
+    githubUrl: 'https://github.com/koshal0304/talent-scout-ai',
+    liveDemoUrl: 'https://talentscoutaihiringassistant.streamlit.app/',
+  },
 ];
 
-const ProjectCard: React.FC<ProjectProps> = ({ title, description, image, technologies, liveUrl, codeUrl }) => {
+// ─── GitHub SVG Icon ──────────────────────────────────────────────
+const GitHubIcon: React.FC = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+    <path d="M9 18c-4.51 2-5-2-7-2" />
+  </svg>
+);
+
+// ─── External Link SVG Icon ──────────────────────────────────────
+const ExternalLinkIcon: React.FC = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+// ─── Project Card with 3D Tilt ────────────────────────────────────
+interface ProjectCardProps {
+  project: Project;
+  index: number;
+}
+
+const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('opacity-100', 'translate-y-0');
-          entry.target.classList.remove('opacity-0', 'translate-y-10');
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.1 }
-    );
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setTilt((prev) => ({
+      x: prev.x + (y * -8 - prev.x) * 0.1,
+      y: prev.y + (x * 8 - prev.y) * 0.1,
+    }));
+  }, []);
 
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-
-    return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
-      }
-    };
+  const handleMouseLeave = useCallback(() => {
+    setTilt({ x: 0, y: 0 });
   }, []);
 
   return (
-    <Card3DTilt maxTilt={8} scale={1.03} className="w-full h-full">
-      <div
-        ref={cardRef}
-        className="group relative overflow-hidden rounded-2xl glass-morph shadow-2xl transition-all duration-500 ease-out opacity-0 translate-y-10 border border-blue-500/20 hover:border-blue-400/40 h-full"
-        style={{ boxShadow: '0 0 30px rgba(59, 130, 246, 0.15)' }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {/* Featured badge */}
-        <div className="absolute top-4 left-4 z-20">
-          <div className="flex items-center gap-1 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-gradient text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-blue-400/30"
-            style={{ boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)' }}>
-            <Star size={12} className="glow-pulse" />
-            <span>Featured</span>
-          </div>
-        </div>
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="bg-surface border border-surface-elevated rounded-xl p-6 cursor-default transition-all duration-300 hover:border-primary/40 hover:shadow-[0_0_20px_rgba(0,212,255,0.15)]"
+      style={{
+        transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+        transition: 'transform 500ms ease, border-color 300ms ease, box-shadow 300ms ease',
+      }}
+    >
+      <h3 className="font-display text-xl font-bold text-text-base mb-3">{project.name}</h3>
+      <p className="text-text-muted font-body text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
 
-        {/* Image container with overlay */}
-        <div className="relative aspect-video overflow-hidden">
-          <img
-            src={image}
-            alt={title}
-            className={`w-full h-full object-cover object-center transition-all duration-700 ease-out ${isHovered ? 'scale-110 blur-sm brightness-75' : 'scale-100'}`}
-          />
-          <div className={`absolute inset-0 bg-gradient-to-t from-blue-900/95 via-black/80 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-90'}`}></div>
-
-          {/* Overlay content that appears on hover */}
-          <div className={`absolute inset-0 flex flex-col justify-center items-center p-6 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-            <p className="text-white text-center mb-6 max-w-xs leading-relaxed">{description}</p>
-            <div className="flex gap-4">
-              <MagneticButton
-                href={liveUrl}
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full font-medium transition-all duration-300 hover:shadow-xl flex items-center gap-2 border border-blue-400/50"
-              >
-                <ExternalLink size={16} /> <span>Live Demo</span>
-              </MagneticButton>
-              {codeUrl && (
-                <MagneticButton
-                  href={codeUrl}
-                  className="px-5 py-2.5 bg-gradient-to-r from-purple-900/90 to-purple-800/90 text-white rounded-full font-medium transition-all duration-300 hover:shadow-xl flex items-center gap-2 border border-purple-500/50"
-                >
-                  <Github size={16} /> <span>View Code</span>
-                </MagneticButton>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Card content */}
-        <div className="p-6 relative bg-gradient-to-t from-gray-900/98 via-gray-900/95 to-gray-900/80 backdrop-blur-md">
-          <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300 mb-3 group-hover:from-blue-200 group-hover:to-purple-200 transition-all duration-300"
-            style={{ textShadow: '0 0 10px rgba(59, 130, 246, 0.4)' }}>{title}</h3>
-
-          {/* Technologies */}
-          <div className="flex flex-wrap gap-2 mb-6 stagger-animation">
-            {technologies.map((tech, index) => (
-              <span
-                key={index}
-                className="px-3 py-1 text-xs font-medium rounded-full glass-morph text-blue-300 border border-blue-700/50 transition-all duration-300 hover:bg-blue-800/40 hover:scale-105 hover:border-blue-600/60"
-                style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.15)' }}
-              >
-                {tech}
-              </span>
-            ))}
-          </div>
-
-          {/* Links */}
-          <div className="flex justify-between items-center">
-            <a
-              href={liveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-blue-400 font-medium transition-all duration-300 hover:text-blue-300 hover:translate-x-1 animated-underline"
-              aria-label={`View ${title} live demo`}
-            >
-              Explore Project <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
-            </a>
-
-            {/* Animated border line */}
-            <div className="h-1 w-0 bg-gradient-to-r from-blue-500 to-purple-600 group-hover:w-1/3 transition-all duration-500 rounded-full"></div>
-          </div>
-        </div>
-
-        {/* Animated corner accents */}
-        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      {/* Tech tags */}
+      <div className="flex flex-wrap gap-2 mb-5">
+        {project.techStack.map((tech) => (
+          <span
+            key={tech}
+            className="font-mono text-xs border border-primary/30 text-primary px-2 py-1 rounded-full"
+          >
+            {tech}
+          </span>
+        ))}
       </div>
-    </Card3DTilt>
+
+      {/* Links */}
+      <div className="flex gap-3">
+        {project.githubUrl && (
+          <a
+            href={project.githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border border-surface-elevated text-text-muted hover:text-primary hover:border-primary transition-all px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1"
+            aria-label={`View ${project.name} on GitHub`}
+          >
+            <GitHubIcon />
+            GitHub
+          </a>
+        )}
+        {project.liveDemoUrl && (
+          <a
+            href={project.liveDemoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border border-surface-elevated text-text-muted hover:text-primary hover:border-primary transition-all px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1"
+            aria-label={`View ${project.name} live demo`}
+          >
+            <ExternalLinkIcon />
+            Live Demo
+          </a>
+        )}
+      </div>
+    </motion.div>
   );
 };
 
+// ─── Main Projects Component ──────────────────────────────────────
 const Projects: React.FC = () => {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
+  const [featuredTilt, setFeaturedTilt] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    const sectionObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('opacity-100');
-          entry.target.classList.remove('opacity-0');
-          sectionObserver.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.1 }
-    );
+  const handleFeaturedMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setFeaturedTilt({ x: y * -8, y: x * 8 });
+  }, []);
 
-    const titleObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate-fade-in');
-          titleObserver.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    if (sectionRef.current) {
-      sectionObserver.observe(sectionRef.current);
-    }
-
-    if (titleRef.current) {
-      titleObserver.observe(titleRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        sectionObserver.unobserve(sectionRef.current);
-      }
-      if (titleRef.current) {
-        titleObserver.unobserve(titleRef.current);
-      }
-    };
+  const handleFeaturedMouseLeave = useCallback(() => {
+    setFeaturedTilt({ x: 0, y: 0 });
   }, []);
 
   return (
-    <section id="projects" className="py-24 bg-black relative overflow-hidden">
-      {/* Moving stars background */}
-      <MovingStarsBackground starCount={120} />
+    <section id="projects" className="bg-background/70 py-24 relative overflow-hidden">
+      <div className="container mx-auto px-4 max-w-5xl relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">Projects</h2>
+        </motion.div>
 
-      {/* Space-themed decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-blue-900/10 to-transparent"></div>
-      <div className="absolute -top-10 -right-10 w-60 h-60 bg-blue-500/5 rounded-full filter blur-3xl animate-pulse-slow"></div>
-      <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-purple-500/5 rounded-full filter blur-3xl animate-pulse-slow" style={{ animationDelay: '1.5s' }}></div>
-      <div className="absolute top-1/3 left-1/4 w-40 h-40 bg-indigo-500/5 rounded-full filter blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+        {/* ═══ Featured project card (UNCHANGED) ═══ */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          onMouseMove={handleFeaturedMouseMove}
+          onMouseLeave={handleFeaturedMouseLeave}
+          className="bg-surface-elevated border border-primary/20 rounded-2xl p-8 md:p-10 relative overflow-hidden cursor-default mb-10"
+          style={{
+            transform: `perspective(1000px) rotateX(${featuredTilt.x}deg) rotateY(${featuredTilt.y}deg)`,
+            transition: 'transform 400ms ease',
+          }}
+        >
+          {/* Top gradient border */}
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-secondary" />
 
-      <div
-        ref={sectionRef}
-        className="container mx-auto px-4 opacity-0 transition-opacity duration-1000 relative z-10"
-      >
-        <div className="text-center mb-20">
-          <div className="inline-block mb-4">
-            <span className="px-4 py-1 bg-blue-900/30 text-blue-300 text-sm font-medium rounded-full backdrop-blur-sm border border-blue-800/30">
-              My Work
-            </span>
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Left: Content */}
+            <div>
+              <h3 className="font-display text-2xl font-bold text-text-base mb-4">{featuredProject.name}</h3>
+              <p className="text-text-muted font-body text-sm leading-relaxed mb-6">{featuredProject.description}</p>
+              <div className="flex flex-wrap gap-2">
+                {featuredProject.techStack.map((tech) => (
+                  <span
+                    key={tech}
+                    className="font-mono text-xs border border-primary/30 text-primary px-2 py-1 rounded-full"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Decorative data pipeline grid */}
+            <div className="hidden md:grid grid-cols-6 grid-rows-4 gap-2" aria-hidden="true">
+              {Array.from({ length: 24 }).map((_, i) => {
+                const isActive = [2, 5, 8, 9, 14, 17, 20, 23].includes(i);
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.03 }}
+                    className={`aspect-square rounded-md ${
+                      isActive ? 'bg-primary/20 glow-cyan' : 'bg-surface border border-surface-elevated'
+                    }`}
+                  />
+                );
+              })}
+            </div>
           </div>
-          <h2
-            ref={titleRef}
-            className="text-4xl sm:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400"
-            style={{ textShadow: '0 0 15px rgba(59, 130, 246, 0.3)' }}
-          >
-            Featured Projects
-          </h2>
-          <div className="w-24 h-1.5 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mb-8 rounded-full animate-pulse-slow"></div>
-          <p className="max-w-2xl mx-auto text-blue-200 text-lg">
-            A showcase of my recent work, featuring web applications and data science projects
-            built with cutting-edge technologies.
-          </p>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-          {projects.map((project, index) => (
-            <ProjectCard key={index} {...project} />
+        {/* ═══ Recovered projects bento grid ═══ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {additionalProjects.map((project, index) => (
+            <ProjectCard key={project.id} project={project} index={index} />
           ))}
         </div>
 
-        {/* View more projects button */}
-        <div className="text-center mt-16">
+        {/* View more on GitHub */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mt-12"
+        >
           <a
             href="https://github.com/koshal0304"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-transparent border-2 border-blue-500 text-blue-300 rounded-full font-medium transition-all duration-300 hover:bg-blue-600/30 hover:text-white hover:border-blue-400"
-            style={{ boxShadow: '0 0 15px rgba(59, 130, 246, 0.2)' }}
+            className="inline-flex items-center gap-2 border border-primary/30 text-text-muted hover:text-primary hover:border-primary transition-all px-6 py-3 rounded-lg font-mono text-sm"
           >
-            <Github size={18} />
-            <span>View More Projects on GitHub</span>
+            <GitHubIcon />
+            View More on GitHub
           </a>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
