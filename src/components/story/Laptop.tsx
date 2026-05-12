@@ -22,11 +22,11 @@ const Laptop = forwardRef<LaptopRefs>((_, ref) => {
   const { canvas: scrCanvas, texture: scrTexture } = useMemo(() => createScreenCanvas(), []);
 
   const laptopMat = useMemo(
-    () => new THREE.MeshToonMaterial({ color: COLORS.laptop, flatShading: true }),
+    () => new THREE.MeshToonMaterial({ color: COLORS.laptop }),
     []
   );
   const hingeMat = useMemo(
-    () => new THREE.MeshToonMaterial({ color: '#3a4a5a', flatShading: true }),
+    () => new THREE.MeshToonMaterial({ color: '#3a4a5a' }),
     []
   );
 

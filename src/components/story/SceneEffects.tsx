@@ -16,12 +16,12 @@ export const OrbitingIcons = forwardRef<IconsRefs>((_, ref) => {
   const g2 = useRef<THREE.Group>(null!);
   const g3 = useRef<THREE.Group>(null!);
 
-  const cyanMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.cyan, flatShading: true }), []);
-  const purpleMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.purple, flatShading: true }), []);
+  const cyanMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.cyan }), []);
+  const purpleMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.purple }), []);
 
   const labels = useMemo(() => [
     createLabelTexture('AI / ML'),
-    createLabelTexture('SQL Agent'),
+    createLabelTexture('AI Agent'),
     createLabelTexture('RAG'),
     createLabelTexture('Backend'),
   ], []);
@@ -134,7 +134,7 @@ export interface CoffeeRefs {
 
 export const CoffeeCup = forwardRef<CoffeeRefs>((_, ref) => {
   const groupRef = useRef<THREE.Group>(null!);
-  const mugMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.hoodie, flatShading: true }), []);
+  const mugMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.hoodie }), []);
 
   useImperativeHandle(ref, () => ({ group: groupRef.current }));
 
@@ -174,7 +174,7 @@ export const FloatingDesk = forwardRef<DeskRefs>((_, ref) => {
   return (
     <mesh ref={meshRef} position={[0, -0.2, 0.3]}>
       <boxGeometry args={[1.0, 0.05, 0.6]} />
-      <meshToonMaterial color={COLORS.laptopDark} flatShading transparent opacity={1} />
+      <meshToonMaterial color={COLORS.laptopDark} transparent opacity={1} />
     </mesh>
   );
 });

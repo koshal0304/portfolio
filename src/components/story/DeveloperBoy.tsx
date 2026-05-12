@@ -38,12 +38,12 @@ const DeveloperBoy = forwardRef<BoyRefs>((_, ref) => {
   const kkTexture = useMemo(() => createKKTexture(), []);
   const bubbleTexture = useMemo(() => createSpeechBubbleTexture(), []);
 
-  const skinMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.skin, flatShading: true }), []);
-  const hoodieMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.hoodie, flatShading: true }), []);
-  const hairMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.hair, flatShading: true }), []);
+  const skinMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.skin }), []);
+  const hoodieMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.hoodie }), []);
+  const hairMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.hair }), []);
   const eyeMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.eyes }), []);
-  const jeansMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.jeans, flatShading: true }), []);
-  const shoeMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.shoes, flatShading: true }), []);
+  const jeansMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.jeans }), []);
+  const shoeMat = useMemo(() => new THREE.MeshToonMaterial({ color: COLORS.shoes }), []);
 
   // Arm geometry with pivot at top (shoulder)
   const armGeo = useMemo(() => {

@@ -38,8 +38,8 @@ function App() {
   // Cursor animation loop with lerp
   const animateCursor = useCallback(() => {
     setCursorLerpPos((prev) => ({
-      x: prev.x + (mouseRef.current.x - prev.x) * 0.08,
-      y: prev.y + (mouseRef.current.y - prev.y) * 0.08,
+      x: prev.x + (mouseRef.current.x - prev.x) * 0.15,
+      y: prev.y + (mouseRef.current.y - prev.y) * 0.15,
     }));
     rafRef.current = requestAnimationFrame(animateCursor);
   }, []);
@@ -95,7 +95,7 @@ function App() {
       >
         <motion.path
           d="M6 8V32M6 20L16 8M6 20L16 32"
-          stroke="#00d4ff"
+          stroke="#fff"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -105,7 +105,7 @@ function App() {
         />
         <motion.path
           d="M24 8V32M24 20L34 8M24 20L34 32"
-          stroke="#00d4ff"
+          stroke="#fff"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -116,9 +116,9 @@ function App() {
       </motion.svg>
 
       {/* Progress bar */}
-      <div className="w-48 h-0.5 bg-surface rounded-full overflow-hidden">
+      <div className="w-48 h-0.5 bg-surface-elevated rounded-full overflow-hidden">
         <motion.div
-          className="h-full bg-primary rounded-full"
+          className="h-full bg-white rounded-full"
           initial={{ width: 0 }}
           animate={{ width: '100%' }}
           transition={{ duration: 2, ease: 'easeInOut' }}
@@ -138,7 +138,7 @@ function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="min-h-screen font-body text-text-base"
+            className="min-h-screen font-body text-text-base bg-transparent"
           >
             {/* Fixed 3D background */}
             <HeroScene3D scrollProgress={scrollVal} />
@@ -147,7 +147,7 @@ function App() {
             <LaptopStoryScene scrollProgress={scrollVal} />
 
             {/* Main content */}
-            <div className="relative z-10">
+            <div className="relative z-10 selection:bg-white selection:text-black">
               <Navbar />
               <Hero />
               <Experience />
@@ -158,28 +158,22 @@ function App() {
               <Footer />
             </div>
 
-            {/* Custom cursor - outer ring (lerped) */}
+            {/* Custom cursor - blend exclusion for premium effect */}
             {!reducedMotion && (
               <>
                 <div
-                  className="fixed pointer-events-none z-50 hidden md:block rounded-full border transition-all duration-150"
+                  className="fixed pointer-events-none z-50 hidden md:flex items-center justify-center rounded-full transition-all duration-300 ease-out blend-exclusion"
                   style={{
-                    width: cursorEnlarged ? '48px' : '32px',
-                    height: cursorEnlarged ? '48px' : '32px',
-                    borderColor: '#00d4ff',
-                    backgroundColor: cursorEnlarged ? 'rgba(0, 212, 255, 0.1)' : 'transparent',
-                    transform: `translate(${cursorLerpPos.x - (cursorEnlarged ? 24 : 16)}px, ${cursorLerpPos.y - (cursorEnlarged ? 24 : 16)}px)`,
+                    width: cursorEnlarged ? '80px' : '32px',
+                    height: cursorEnlarged ? '80px' : '32px',
+                    backgroundColor: 'white',
+                    transform: `translate(${cursorLerpPos.x - (cursorEnlarged ? 40 : 16)}px, ${cursorLerpPos.y - (cursorEnlarged ? 40 : 16)}px)`,
                   }}
-                />
-                {/* Inner dot (immediate) */}
-                <div
-                  className="fixed pointer-events-none z-50 hidden md:block rounded-full bg-primary"
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    transform: `translate(${cursorPos.x - 3}px, ${cursorPos.y - 3}px)`,
-                  }}
-                />
+                >
+                  <span className={`text-black text-xs font-bold uppercase tracking-widest transition-opacity duration-200 ${cursorEnlarged ? 'opacity-100' : 'opacity-0'}`}>
+                    Click
+                  </span>
+                </div>
               </>
             )}
           </motion.div>
