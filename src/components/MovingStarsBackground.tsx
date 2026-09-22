@@ -52,9 +52,10 @@ const MovingStarsBackground: React.FC<MovingStarsBackgroundProps> = ({
         return isLargeStar ? '#e0f2ff' : '#a0d8ff';
       case 'purple':
         return isLargeStar ? '#f0e6ff' : '#d8b4ff';
-      case 'mixed':
+      case 'mixed': {
         const colors = ['#ffffff', '#e0f2ff', '#f0e6ff', '#ffe6f0'];
         return colors[Math.floor(Math.random() * colors.length)];
+      }
       case 'white':
       default:
         return isLargeStar ? '#f0f9ff' : '#ffffff';
@@ -69,7 +70,7 @@ const MovingStarsBackground: React.FC<MovingStarsBackgroundProps> = ({
         return `0 0 ${isLargeStar ? 8 : 4}px rgba(59, 130, 246, ${intensity})`;
       case 'purple':
         return `0 0 ${isLargeStar ? 8 : 4}px rgba(139, 92, 246, ${intensity})`;
-      case 'mixed':
+      case 'mixed': {
         const colors = [
           `rgba(255, 255, 255, ${intensity})`,
           `rgba(59, 130, 246, ${intensity})`,
@@ -77,6 +78,7 @@ const MovingStarsBackground: React.FC<MovingStarsBackgroundProps> = ({
           `rgba(236, 72, 153, ${intensity})`
         ];
         return `0 0 ${isLargeStar ? 8 : 4}px ${colors[Math.floor(Math.random() * colors.length)]}`;
+      }
       case 'white':
       default:
         return `0 0 ${isLargeStar ? 8 : 4}px rgba(255, 255, 255, ${intensity})`;

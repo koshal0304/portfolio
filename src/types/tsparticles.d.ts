@@ -4,8 +4,8 @@ declare module 'react-tsparticles' {
   interface Props {
     id: string;
     className?: string;
-    options?: any;
-    init?: (engine: any) => Promise<void>;
+    options?: Record<string, unknown>;
+    init?: (engine: unknown) => Promise<void>;
   }
   
   const Particles: FC<Props>;
@@ -13,7 +13,7 @@ declare module 'react-tsparticles' {
 }
 
 declare module 'tsparticles' {
-  export function loadFull(engine: any): Promise<void>;
+  export function loadFull(engine: unknown): Promise<void>;
 }
 
 declare module 'tsparticles-engine' {

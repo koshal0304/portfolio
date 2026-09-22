@@ -130,9 +130,9 @@ const SkillIcon3D: React.FC<SkillIcon3DProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(false);
   
-  // Check if component is in viewport
   useEffect(() => {
-    if (!containerRef.current) return;
+    const node = containerRef.current;
+    if (!node) return;
     
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -141,12 +141,10 @@ const SkillIcon3D: React.FC<SkillIcon3DProps> = ({
       { threshold: 0.1 }
     );
     
-    observer.observe(containerRef.current);
+    observer.observe(node);
     
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
-      }
+      observer.unobserve(node);
     };
   }, []);
   

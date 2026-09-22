@@ -173,8 +173,6 @@ interface ScrollObject3DProps {
 const ScrollObject3D: React.FC<ScrollObject3DProps> = ({ scrollProgress }) => {
   const solidRef = useRef<THREE.Mesh>(null);
   const wireRef = useRef<THREE.Mesh>(null);
-  const solidMatRef = useRef<THREE.ShaderMaterial>(null);
-  const wireMatRef = useRef<THREE.ShaderMaterial>(null);
   const pausedRef = useRef(false);
 
   const [isMobile, setIsMobile] = useState(false);

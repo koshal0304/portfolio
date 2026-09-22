@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -6,16 +6,19 @@ import Experience from './components/Experience';
 import Projects from './components/Projects';
 import Skills from './components/Skills';
 import Achievements from './components/Achievements';
+import Education from './components/Education';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
-import HeroScene3D from './components/HeroScene3D';
-import LaptopStoryScene from './components/LaptopStoryScene';
+import NeuralCodeScene3D, { NeuralMode } from './components/NeuralCodeScene3D';
+import AIEngineerSandbox from './components/AIEngineerSandbox';
 import SectionDivider from './components/SectionDivider';
 import Cursor3D from './components/Cursor3D';
+import { Sparkles } from 'lucide-react';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
+  const [active3DMode, setActive3DMode] = useState<NeuralMode>('attention');
 
   // Scroll progress for HeroScene3D
   const { scrollYProgress } = useScroll();
@@ -117,7 +120,7 @@ function App() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.8 }}
-        className="font-display text-2xl font-bold text-white mb-2 tracking-tight"
+        className="font-display text-2xl font-bold text-slate-100 mb-2 tracking-tight"
       >
         <span className={loadProgress > 50 ? 'loading-glitch' : ''}>
           Koshal Kumar
@@ -128,7 +131,7 @@ function App() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.9, duration: 0.6 }}
-        className="font-mono text-xs text-white/40 tracking-[0.4em] uppercase mb-10"
+        className="font-mono text-xs text-slate-400 tracking-[0.4em] uppercase mb-10"
       >
         AI Engineer
       </motion.p>
@@ -141,7 +144,7 @@ function App() {
             style={{
               width: `${loadProgress}%`,
               background: `linear-gradient(90deg, var(--aurora-1), var(--aurora-2))`,
-              boxShadow: '0 0 20px rgba(0, 212, 255, 0.5)',
+              boxShadow: '0 0 20px rgba(56, 189, 248, 0.4)',
               transition: 'width 0.05s linear',
             }}
           />
@@ -150,7 +153,7 @@ function App() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="absolute right-0 top-3 font-mono text-[10px] text-white/30"
+          className="absolute right-0 top-3 font-mono text-[10px] text-slate-400"
         >
           {Math.round(loadProgress)}%
         </motion.span>
@@ -169,18 +172,37 @@ function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
-            className="min-h-screen font-body text-text-base bg-transparent noise-overlay"
+            className="min-h-screen font-body text-slate-200 bg-transparent noise-overlay"
           >
-            {/* Fixed 3D background */}
-            <HeroScene3D scrollProgress={scrollVal} />
-
-            {/* Scroll-driven 3D story scene */}
-            <LaptopStoryScene scrollProgress={scrollVal} />
+            {/* Interactive 3D Neural Code Matrix Background */}
+            <NeuralCodeScene3D
+              scrollProgress={scrollVal}
+              activeMode={active3DMode}
+            />
 
             {/* Main content */}
-            <div className="relative z-10 selection:bg-white selection:text-black">
+            <div className="relative z-10 selection:bg-sky-500/30 selection:text-sky-100">
               <Navbar />
-              <Hero />
+              <Hero active3DMode={active3DMode} on3DModeChange={setActive3DMode} />
+              <SectionDivider />
+
+              {/* Dedicated Interactive AI Engineering Section */}
+              <section id="ai-sandbox" className="py-20 md:py-28 px-4 max-w-5xl mx-auto relative z-20">
+                <div className="text-center mb-10">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-panel border border-sky-400/30 text-sky-300 font-mono text-xs uppercase tracking-wider mb-4 shadow-[0_0_15px_rgba(56,189,248,0.15)]">
+                    <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Live Interactive Demonstration</span>
+                  </div>
+                  <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-slate-100 tracking-tight mb-4">
+                    AI Engineering Lab
+                  </h2>
+                  <p className="text-slate-400 font-body text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+                    Test live multi-agent reasoning, schema-aware NL-to-SQL generation, and adversarial prompt injection defenses.
+                  </p>
+                </div>
+                <AIEngineerSandbox />
+              </section>
+
               <SectionDivider />
               <Experience />
               <SectionDivider />
@@ -189,6 +211,8 @@ function App() {
               <Projects />
               <SectionDivider />
               <Achievements />
+              <SectionDivider />
+              <Education />
               <SectionDivider />
               <Contact />
               <Footer />

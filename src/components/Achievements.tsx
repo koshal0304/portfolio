@@ -60,7 +60,7 @@ const CountUp: React.FC<CountUpProps> = ({ target, suffix, shouldStart, color })
     <span
       style={{
         color,
-        textShadow: `0 0 40px ${color}40, 0 0 80px ${color}20`,
+        textShadow: `0 0 25px ${color}35`,
       }}
     >
       {current}
@@ -110,10 +110,10 @@ const Achievements: React.FC = () => {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-16"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-slate-100 mb-4 tracking-tight">
             Impact by the Numbers
           </h2>
-          <p className="text-text-muted font-body">Measurable outcomes shipped to production</p>
+          <p className="text-slate-400 font-body text-base">Measurable outcomes shipped to production</p>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -124,7 +124,7 @@ const Achievements: React.FC = () => {
           />
         </motion.div>
 
-        <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+        <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
           {metrics.map((metric, idx) => (
             <motion.div
               key={idx}
@@ -132,9 +132,9 @@ const Achievements: React.FC = () => {
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.15, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="text-center glass-liquid rounded-xl p-6"
+              className="text-center glass-liquid rounded-2xl p-6 border border-white/[0.08] hover:border-white/20 transition-all flex flex-col items-center justify-between"
             >
-              <div className="font-display text-5xl md:text-6xl lg:text-7xl font-bold mb-3">
+              <div className="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-3">
                 <CountUp
                   target={metric.value}
                   suffix={metric.suffix}
@@ -150,7 +150,7 @@ const Achievements: React.FC = () => {
                   boxShadow: `0 0 10px ${metric.color}50`,
                 }}
               />
-              <p className="font-body text-sm text-text-muted max-w-[160px] mx-auto">{metric.label}</p>
+              <p className="font-body text-xs sm:text-sm text-slate-300 max-w-[170px] leading-relaxed">{metric.label}</p>
             </motion.div>
           ))}
         </div>

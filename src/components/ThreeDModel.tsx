@@ -1,5 +1,5 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
+import React, { useRef, useState } from 'react';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -29,7 +29,6 @@ const Model: React.FC<ModelProps> = ({
   emissive = '#000000',
   metalness = 0.5,
   roughness = 0.5,
-  interactive = true,
   autoRotate = true,
   rotationSpeed = 0.005
 }) => {
@@ -176,8 +175,6 @@ interface Text3DProps {
   position?: [number, number, number];
   color?: string;
   size?: number;
-  height?: number;
-  font?: string;
   autoRotate?: boolean;
   rotationSpeed?: number;
 }
@@ -188,8 +185,6 @@ const Text3D: React.FC<Text3DProps> = ({
   position = [0, 0, 0], 
   color = '#ffffff',
   size = 1,
-  height = 0.2,
-  font = 'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json',
   autoRotate = false,
   rotationSpeed = 0.005
 }) => {

@@ -36,6 +36,15 @@ const CONTACT_LINKS = [
     ),
   },
   {
+    label: 'Phone',
+    href: 'tel:+918218806349',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+      </svg>
+    ),
+  },
+  {
     label: 'GitHub',
     href: 'https://github.com/koshal0304',
     icon: (
@@ -102,10 +111,12 @@ const Contact: React.FC = () => {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-16"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-slate-100 mb-4 tracking-tight">
             Let's Build Something
           </h2>
-          <p className="text-text-muted font-body">Open to AI/ML roles, freelance projects, and collaborations.</p>
+          <p className="text-slate-400 font-body text-base max-w-xl mx-auto">
+            Based in Bengaluru, India · Open to AI/ML engineering roles, production LLM systems & collaborations.
+          </p>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -117,7 +128,7 @@ const Contact: React.FC = () => {
         </motion.div>
 
         {/* Icon links with neon hover */}
-        <div className="flex justify-center gap-8 md:gap-12 mb-16">
+        <div className="flex justify-center gap-6 md:gap-10 mb-16">
           {CONTACT_LINKS.map((link, i) => (
             <motion.a
               key={link.label}
@@ -128,17 +139,17 @@ const Contact: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.6 }}
-              whileHover={{ scale: 1.1, y: -4 }}
+              whileHover={{ scale: 1.05, y: -4 }}
               data-cursor-text="Open"
-              className="flex flex-col items-center gap-2 text-white/40 hover:text-white transition-all duration-300 cursor-pointer group"
+              className="flex flex-col items-center gap-2 text-slate-400 hover:text-slate-200 transition-all duration-300 cursor-pointer group"
               aria-label={link.label}
             >
               <div
-                className="p-3 rounded-xl glass-liquid group-hover:shadow-[0_0_20px_rgba(0,212,255,0.2)] transition-shadow duration-500"
+                className="p-3.5 rounded-xl glass-liquid border border-white/[0.08] group-hover:border-sky-400/40 group-hover:shadow-[0_0_20px_rgba(56,189,248,0.25)] text-slate-300 group-hover:text-sky-300 transition-all duration-300"
               >
                 {link.icon}
               </div>
-              <span className="font-mono text-xs">{link.label}</span>
+              <span className="font-mono text-xs text-slate-400 group-hover:text-slate-200 transition-colors">{link.label}</span>
             </motion.a>
           ))}
         </div>
@@ -152,7 +163,7 @@ const Contact: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                className="text-center py-16"
+                className="text-center py-16 glass-liquid rounded-2xl p-8 border border-white/[0.08]"
               >
                 <motion.div
                   initial={{ scale: 0 }}
@@ -160,19 +171,18 @@ const Contact: React.FC = () => {
                   transition={{ delay: 0.2, type: 'spring', bounce: 0.5 }}
                 >
                   <svg
-                    className="w-16 h-16 mx-auto mb-4"
+                    className="w-16 h-16 mx-auto mb-4 text-sky-400"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                    style={{ color: 'var(--aurora-1)' }}
                   >
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeLinecap="round" />
                     <polyline points="22 4 12 14.01 9 11.01" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </motion.div>
-                <h3 className="font-display text-2xl text-text-base mb-2">Message Sent!</h3>
-                <p className="text-text-muted">Thank you for reaching out. I'll get back to you soon.</p>
+                <h3 className="font-display text-2xl font-bold text-slate-100 mb-2">Message Sent!</h3>
+                <p className="text-slate-300 font-body text-sm">Thank you for reaching out. I'll get back to you soon.</p>
               </motion.div>
             ) : (
               <motion.form
@@ -200,14 +210,13 @@ const Contact: React.FC = () => {
                     onFocus={() => setFocusedField('name')}
                     onBlur={() => setFocusedField(null)}
                     placeholder=" "
-                    className={`peer w-full bg-[var(--surface-1)] border ${
-                      errors.name ? 'border-red-500' : focusedField === 'name' ? 'border-[var(--aurora-1)]' : 'border-white/5'
-                    } rounded-lg px-4 pt-6 pb-2 text-text-base font-body focus:outline-none transition-all input-neon`}
-                    style={{ boxShadow: 'none' }}
+                    className={`peer w-full bg-[#07090e]/70 border ${
+                      errors.name ? 'border-red-400/80' : focusedField === 'name' ? 'border-sky-400/60 shadow-[0_0_15px_rgba(56,189,248,0.15)]' : 'border-white/10'
+                    } rounded-xl px-4 pt-6 pb-2 text-slate-100 font-body focus:outline-none transition-all`}
                   />
                   <label
                     htmlFor="contact-name"
-                    className="absolute left-4 top-4 text-text-muted text-sm transition-all duration-200 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-[var(--aurora-1)] peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-xs"
+                    className="absolute left-4 top-4 text-slate-400 text-sm transition-all duration-200 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-sky-300 peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-xs"
                   >
                     Name
                   </label>
@@ -231,13 +240,13 @@ const Contact: React.FC = () => {
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => setFocusedField(null)}
                     placeholder=" "
-                    className={`peer w-full bg-[var(--surface-1)] border ${
-                      errors.email ? 'border-red-500' : focusedField === 'email' ? 'border-[var(--aurora-1)]' : 'border-white/5'
-                    } rounded-lg px-4 pt-6 pb-2 text-text-base font-body focus:outline-none transition-all input-neon`}
+                    className={`peer w-full bg-[#07090e]/70 border ${
+                      errors.email ? 'border-red-400/80' : focusedField === 'email' ? 'border-sky-400/60 shadow-[0_0_15px_rgba(56,189,248,0.15)]' : 'border-white/10'
+                    } rounded-xl px-4 pt-6 pb-2 text-slate-100 font-body focus:outline-none transition-all`}
                   />
                   <label
                     htmlFor="contact-email"
-                    className="absolute left-4 top-4 text-text-muted text-sm transition-all duration-200 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-[var(--aurora-1)] peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-xs"
+                    className="absolute left-4 top-4 text-slate-400 text-sm transition-all duration-200 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-sky-300 peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-xs"
                   >
                     Email
                   </label>
@@ -261,13 +270,13 @@ const Contact: React.FC = () => {
                     onBlur={() => setFocusedField(null)}
                     placeholder=" "
                     rows={4}
-                    className={`peer w-full bg-[var(--surface-1)] border ${
-                      errors.message ? 'border-red-500' : focusedField === 'message' ? 'border-[var(--aurora-1)]' : 'border-white/5'
-                    } rounded-lg px-4 pt-6 pb-2 text-text-base font-body focus:outline-none transition-all resize-none input-neon`}
+                    className={`peer w-full bg-[#07090e]/70 border ${
+                      errors.message ? 'border-red-400/80' : focusedField === 'message' ? 'border-sky-400/60 shadow-[0_0_15px_rgba(56,189,248,0.15)]' : 'border-white/10'
+                    } rounded-xl px-4 pt-6 pb-2 text-slate-100 font-body focus:outline-none transition-all resize-none`}
                   />
                   <label
                     htmlFor="contact-message"
-                    className="absolute left-4 top-4 text-text-muted text-sm transition-all duration-200 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-[var(--aurora-1)] peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-xs"
+                    className="absolute left-4 top-4 text-slate-400 text-sm transition-all duration-200 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-sky-300 peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-xs"
                   >
                     Message
                   </label>
@@ -277,26 +286,14 @@ const Contact: React.FC = () => {
                 {/* Submit — aurora gradient button */}
                 <motion.button
                   type="submit"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                   data-cursor-text="Send"
-                  className="w-full font-display font-bold py-3.5 rounded-lg transition-all cursor-pointer relative overflow-hidden group"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--aurora-1), var(--aurora-2))',
-                    color: 'var(--bg-deep)',
-                    boxShadow: '0 0 30px rgba(0, 212, 255, 0.2)',
-                  }}
+                  className="w-full font-body font-semibold py-3.5 rounded-xl transition-all cursor-pointer relative overflow-hidden group bg-gradient-to-r from-sky-500 to-indigo-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.25)] hover:opacity-95"
                 >
-                  {/* Shimmer on hover */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background: 'linear-gradient(135deg, var(--aurora-2), var(--aurora-3))',
-                      }}
-                    />
-                  </div>
-                  <span className="relative z-10">Send Message</span>
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    Send Message
+                  </span>
                 </motion.button>
               </motion.form>
             )}

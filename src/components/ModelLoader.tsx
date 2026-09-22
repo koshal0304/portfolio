@@ -20,7 +20,7 @@ const ModelLoader: React.FC<ModelLoaderProps> = ({
   color = '#4299e1',
   backgroundColor = 'rgba(0, 0, 0, 0.5)'
 }) => {
-  const { active, progress, errors, item, loaded, total } = useProgress();
+  const { active, progress } = useProgress();
   const [isLoaded, setIsLoaded] = useState(false);
   
   useEffect(() => {

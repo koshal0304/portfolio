@@ -81,7 +81,7 @@ const Cursor3D: React.FC<Cursor3DProps> = ({ reducedMotion }) => {
   const particles = useRef<Particle[]>([]);
   const rotation = useRef({ x: 0, y: 0, z: 0 });
   const scale = useRef(1);
-  const hue = useRef(185); // cyan
+  const hue = useRef(199); // soft sky
   const lastSpawn = useRef(0);
   const frameId = useRef(0);
 
@@ -185,7 +185,7 @@ const Cursor3D: React.FC<Cursor3DProps> = ({ reducedMotion }) => {
           life: 1,
           maxLife: 0.6 + Math.random() * 0.4,
           size: 1.5 + Math.random() * 3,
-          hue: 185 + Math.random() * 50, // cyan → blue
+          hue: 195 + Math.random() * 30, // soft sky → indigo
           vx: (Math.random() - 0.5) * 1,
           vy: (Math.random() - 0.5) * 1 - 0.5,
         });
@@ -239,10 +239,10 @@ const Cursor3D: React.FC<Cursor3DProps> = ({ reducedMotion }) => {
     if (clicked) targetScale = 0.6;
     scale.current += (targetScale - scale.current) * 0.08;
 
-    // Hue shift: cyan idle, purple hover, pink click
-    let targetHue = 185 + Math.sin(now * 0.001) * 10;
-    if (hovered) targetHue = 270;
-    if (clicked) targetHue = 320;
+    // Hue shift: soft sky idle, soft iris/purple hover, soft rose/pink click
+    let targetHue = 199 + Math.sin(now * 0.001) * 8;
+    if (hovered) targetHue = 245;
+    if (clicked) targetHue = 330;
     hue.current += (targetHue - hue.current) * 0.06;
 
     const icoSize = 14 * scale.current; // px radius
@@ -319,9 +319,9 @@ const Cursor3D: React.FC<Cursor3DProps> = ({ reducedMotion }) => {
       ctx.fillStyle = dotGlow;
       ctx.arc(mx, my, dotR * 5, 0, Math.PI * 2);
       ctx.fill();
-      // Core white dot
+      // Core soft titanium dot
       ctx.beginPath();
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillStyle = 'rgba(241, 245, 249, 0.95)';
       ctx.arc(mx, my, dotR, 0, Math.PI * 2);
       ctx.fill();
     }

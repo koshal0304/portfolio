@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { act, flerp, ACT, CAMERA_TARGETS, CODE_LINES } from './constants';
@@ -51,9 +51,6 @@ const StoryScene: React.FC<StorySceneProps> = ({ scrollProgress, isMobile, reduc
     camera.position.set(0, 0.2, 3.8);
     camera.lookAt(0, 0, 0);
   }, [camera]);
-
-  // Dust mat ref for time update
-  const dustMatRef = useRef<THREE.ShaderMaterial | null>(null);
 
   useFrame((state, delta) => {
     if (pausedRef.current || !boyRef.current || !laptopRef.current) return;

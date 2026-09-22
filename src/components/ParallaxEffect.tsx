@@ -27,27 +27,24 @@ const ParallaxEffect: React.FC<ParallaxEffectProps> = ({
     }
   };
 
-  // Calculate movement direction
-  const getTransform = (scrollY: number, mouseX: number, mouseY: number) => {
-    // Base movement on scroll position
-    let x = 0;
-    let y = 0;
-
-    // Apply scroll-based movement
-    if (direction === 'up') y = scrollY * factor;
-    if (direction === 'down') y = -scrollY * factor;
-    if (direction === 'left') x = scrollY * factor;
-    if (direction === 'right') x = -scrollY * factor;
-
-    // Add subtle mouse movement effect (reduced factor for subtlety)
-    const mouseFactor = factor * 0.05;
-    x += (mouseX - window.innerWidth / 2) * mouseFactor;
-    y += (mouseY - window.innerHeight / 2) * mouseFactor;
-
-    return { x, y };
-  };
-
   useEffect(() => {
+    // Calculate movement direction
+    const getTransform = (scrollY: number, mouseX: number, mouseY: number) => {
+      let x = 0;
+      let y = 0;
+
+      if (direction === 'up') y = scrollY * factor;
+      if (direction === 'down') y = -scrollY * factor;
+      if (direction === 'left') x = scrollY * factor;
+      if (direction === 'right') x = -scrollY * factor;
+
+      const mouseFactor = factor * 0.05;
+      x += (mouseX - window.innerWidth / 2) * mouseFactor;
+      y += (mouseY - window.innerHeight / 2) * mouseFactor;
+
+      return { x, y };
+    };
+
     let mouseX = 0;
     let mouseY = 0;
 

@@ -60,7 +60,7 @@ const MagneticButton: React.FC<MagneticButtonProps> = ({
 
   return (
     <Component
-      ref={buttonRef as any}
+      ref={buttonRef as React.Ref<HTMLButtonElement & HTMLAnchorElement>}
       className={`magnetic-btn ${className}`}
       style={{
         transform: `translate(${position.x}px, ${position.y}px)`

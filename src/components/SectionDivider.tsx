@@ -27,7 +27,7 @@ const SectionDivider: React.FC = () => {
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
         style={{
           background: 'var(--aurora-1)',
-          boxShadow: '0 0 20px rgba(0, 212, 255, 0.5), 0 0 40px rgba(0, 212, 255, 0.2)',
+          boxShadow: '0 0 15px rgba(56, 189, 248, 0.45), 0 0 30px rgba(56, 189, 248, 0.2)',
         }}
       />
     </div>

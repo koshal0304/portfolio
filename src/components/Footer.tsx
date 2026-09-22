@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
       <div
         className="absolute top-0 left-0 right-0 h-[1px]"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.25), transparent)',
         }}
       />
 
@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="text-white/30 text-sm font-mono text-center md:text-left"
+            className="text-slate-400 text-sm font-mono text-center md:text-left"
           >
             © 2026 Koshal Kumar — AI Engineer, Bengaluru
           </motion.p>
@@ -26,7 +26,7 @@ const Footer: React.FC = () => {
           <div className="flex items-center gap-6">
             <a
               href="mailto:koshalkumar0304@gmail.com"
-              className="text-white/30 hover:text-white transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(0,212,255,0.4)] cursor-pointer"
+              className="text-slate-400 hover:text-sky-300 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(56,189,248,0.4)] cursor-pointer"
               aria-label="Email"
               data-cursor-text="Email"
             >
@@ -39,7 +39,7 @@ const Footer: React.FC = () => {
               href="https://linkedin.com/in/koshal-kumar-970233240"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/30 hover:text-white transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(0,212,255,0.4)] cursor-pointer"
+              className="text-slate-400 hover:text-sky-300 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(56,189,248,0.4)] cursor-pointer"
               aria-label="LinkedIn"
               data-cursor-text="LinkedIn"
             >
@@ -50,10 +50,20 @@ const Footer: React.FC = () => {
               </svg>
             </a>
             <a
+              href="tel:+918218806349"
+              className="text-slate-400 hover:text-sky-300 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(56,189,248,0.4)] cursor-pointer"
+              aria-label="Phone"
+              data-cursor-text="Call"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+            </a>
+            <a
               href="https://github.com/koshal0304"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/30 hover:text-white transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(0,212,255,0.4)] cursor-pointer"
+              className="text-slate-400 hover:text-sky-300 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(56,189,248,0.4)] cursor-pointer"
               aria-label="GitHub"
               data-cursor-text="GitHub"
             >

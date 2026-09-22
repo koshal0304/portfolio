@@ -14,15 +14,25 @@ export default {
         background: '#050505',
         surface: '#0A0A0A',
         'surface-elevated': '#121212',
-        primary: '#ffffff',
-        secondary: '#a3a3a3',
-        'text-base': '#FAFAFA',
-        'text-muted': '#737373',
-        accent: '#2563EB',
+        primary: '#F1F5F9',
+        secondary: '#94A3B8',
+        'text-base': '#F1F5F9',
+        'text-muted': '#94A3B8',
+        accent: '#38BDF8',
+        soft: {
+          primary: '#F1F5F9',
+          secondary: '#CBD5E1',
+          muted: '#94A3B8',
+          dim: '#64748B',
+        },
+        'soft-cyan': '#38BDF8',
+        'soft-purple': '#A78BFA',
+        'soft-pink': '#F472B6',
+        'soft-emerald': '#34D399',
         neon: {
-          blue: '#00d4ff',
-          purple: '#7c3aed',
-          pink: '#ff2a8f'
+          blue: '#38BDF8',
+          purple: '#A78BFA',
+          pink: '#F472B6'
         }
       },
       animation: {
@@ -86,20 +96,27 @@ export default {
     plugin(function ({ addUtilities }) {
       addUtilities({
         '.glow-cyan': {
-          boxShadow: '0 0 20px rgba(0,212,255,0.35), 0 0 60px rgba(0,212,255,0.1)',
+          boxShadow: '0 0 20px rgba(56,189,248,0.25), 0 0 60px rgba(56,189,248,0.08)',
         },
         '.glow-purple': {
-          boxShadow: '0 0 20px rgba(124,58,237,0.35), 0 0 60px rgba(124,58,237,0.1)',
+          boxShadow: '0 0 20px rgba(167,139,250,0.25), 0 0 60px rgba(167,139,250,0.08)',
         },
         '.text-gradient': {
-          background: 'linear-gradient(135deg, #fff 0%, #a3a3a3 100%)',
+          background: 'linear-gradient(135deg, #F8FAFC 0%, #CBD5E1 50%, #94A3B8 100%)',
+          '-webkit-background-clip': 'text',
+          '-webkit-text-fill-color': 'transparent',
+          'background-clip': 'text',
+          color: 'transparent',
+        },
+        '.text-gradient-soft': {
+          background: 'linear-gradient(135deg, #F1F5F9 0%, #38BDF8 60%, #A78BFA 100%)',
           '-webkit-background-clip': 'text',
           '-webkit-text-fill-color': 'transparent',
           'background-clip': 'text',
           color: 'transparent',
         },
         '.text-gradient-neon': {
-          background: 'linear-gradient(135deg, #00d4ff, #7c3aed, #ff2a8f)',
+          background: 'linear-gradient(135deg, #38BDF8, #A78BFA, #F472B6)',
           'background-size': '200% auto',
           '-webkit-background-clip': 'text',
           '-webkit-text-fill-color': 'transparent',

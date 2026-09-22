@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
+import SemanticCluster3D from './SemanticCluster3D';
 
 interface Project {
   id: string;
   name: string;
+  subtitle?: string;
   description: string;
   techStack: string[];
   githubUrl?: string;
@@ -12,11 +14,12 @@ interface Project {
 }
 
 const featuredProject: Project = {
-  id: 'object-detection',
-  name: 'AI-Powered Real-Time Object Detection & Monitoring',
+  id: 'image-retrieval',
+  name: 'AI-Powered Image Retrieval System',
+  subtitle: 'Semantic Image Search App | CLIP, FAISS, Flask, React',
   description:
-    'Phone-usage detection app. RTSP video stream via OpenCV. Concurrent GPU inference via ThreadPoolExecutor with tenacity retries. Live Matplotlib/Seaborn dashboard. Full pipeline: stream capture → structured output → real-time display.',
-  techStack: ['Streamlit', 'Google Gemini API', 'OpenCV', 'PyTorch', 'ThreadPoolExecutor'],
+    'Full-stack semantic image search app using CLIP embeddings and FAISS for fast similarity search across 1000+ images, with a Flask REST API delivering sub-second query times. Features K-means clustering, hybrid text-image search with weighted scoring, real-time upload with auto-embedding, and an interactive Material-UI frontend (drag-and-drop, infinite scroll, favorites, confidence scores).',
+  techStack: ['CLIP', 'FAISS', 'Flask', 'React', 'Material-UI', 'Python', 'K-Means'],
   featured: true,
 };
 
@@ -24,17 +27,27 @@ const additionalProjects: Project[] = [
   {
     id: 'knowledge-assistant',
     name: 'Personal Knowledge Assistant',
+    subtitle: 'RAG Chatbot | Gemini, LangChain, Pinecone',
     description:
-      'AI-powered knowledge management system that helps users organize, retrieve, and generate insights from their personal documents and notes.',
-    techStack: ['Python', 'Streamlit', 'LangChain', 'OpenAI', 'Vector DB'],
+      'RAG-based chatbot using Google Gemini, LangChain, and Streamlit, with a document pipeline using BGE embeddings and Pinecone for semantic search and retrieval. Modular architecture with configurable chunking, retrieval, and prompt engineering.',
+    techStack: ['Gemini API', 'LangChain', 'Pinecone', 'BGE Embeddings', 'Streamlit', 'Python'],
     githubUrl: 'https://github.com/koshal0304/personal-knowledge-assistant',
     liveDemoUrl: 'https://personal-knowledge-assistant-g.streamlit.app/',
   },
   {
+    id: 'object-detection',
+    name: 'Real-Time Object Detection & Monitoring',
+    subtitle: 'Vision Pipeline | OpenCV, PyTorch, Gemini API',
+    description:
+      'Phone-usage detection app with RTSP video stream via OpenCV. Concurrent GPU inference via ThreadPoolExecutor with tenacity retries and live Matplotlib/Seaborn dashboard.',
+    techStack: ['Streamlit', 'Gemini API', 'OpenCV', 'PyTorch', 'ThreadPoolExecutor'],
+  },
+  {
     id: 'yolo-detector',
     name: 'Webcam YOLO Object Detector',
+    subtitle: 'Real-Time Vision | YOLO, OpenCV, Streamlit',
     description:
-      'Real-time object detection application using YOLO algorithm to identify objects through webcam feed with high accuracy and performance.',
+      'Real-time object detection application using YOLO algorithm to identify objects through webcam feed with high accuracy and low latency.',
     techStack: ['Python', 'Streamlit', 'OpenCV', 'YOLO', 'Computer Vision'],
     githubUrl: 'https://github.com/koshal0304/webcamyolodetector',
     liveDemoUrl: 'https://webcamyolodetector-l.streamlit.app/',
@@ -42,8 +55,9 @@ const additionalProjects: Project[] = [
   {
     id: 'talent-scout',
     name: 'Talent Scout AI Hiring Assistant',
+    subtitle: 'AI Talent Screening | NLP & Document Parsing',
     description:
-      'AI-powered application that helps recruiters identify potential candidates based on resume analysis and job descriptions, streamlining the hiring process.',
+      'AI-powered application that helps recruiters identify top candidates based on semantic resume analysis and job descriptions, streamlining technical screening.',
     techStack: ['Python', 'Streamlit', 'NLP', 'Machine Learning', 'Document Processing'],
     githubUrl: 'https://github.com/koshal0304/talent-scout-ai',
     liveDemoUrl: 'https://talentscoutaihiringassistant.streamlit.app/',
@@ -83,10 +97,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
     setTilt((prev) => ({
-      x: prev.x + (y * -12 - prev.x) * 0.15,
-      y: prev.y + (x * 12 - prev.y) * 0.15,
+      x: prev.x + (y * -10 - prev.x) * 0.15,
+      y: prev.y + (x * 10 - prev.y) * 0.15,
     }));
-    // Track glow position for spotlight effect
     setGlowPos({
       x: ((e.clientX - rect.left) / rect.width) * 100,
       y: ((e.clientY - rect.top) / rect.height) * 100,
@@ -117,23 +130,25 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
       <div
         className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{
-          background: `radial-gradient(400px circle at ${glowPos.x}% ${glowPos.y}%, rgba(0, 212, 255, 0.06), transparent 50%)`,
+          background: `radial-gradient(400px circle at ${glowPos.x}% ${glowPos.y}%, rgba(56, 189, 248, 0.08), transparent 50%)`,
         }}
       />
 
-      <div style={{ transform: 'translateZ(30px)', transformStyle: 'preserve-3d' }}>
-        <h3 className="font-display text-xl font-bold text-white mb-3 tracking-tight">{project.name}</h3>
-        <p className="text-white/60 font-body text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
+      <div style={{ transform: 'translateZ(26px)', transformStyle: 'preserve-3d' }}>
+        <h3 className="font-display text-xl font-bold text-slate-100 mb-1 tracking-tight">{project.name}</h3>
+        {project.subtitle && (
+          <p className="font-mono text-xs text-sky-300/90 mb-3">{project.subtitle}</p>
+        )}
+        <p className="text-slate-300 font-body text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
 
         {/* Tech tags */}
-        <div className="flex flex-wrap gap-2 mb-5" style={{ transform: 'translateZ(15px)' }}>
+        <div className="flex flex-wrap gap-2 mb-5" style={{ transform: 'translateZ(12px)' }}>
           {project.techStack.map((tech) => (
             <span
               key={tech}
-              className="font-mono text-[10px] px-3 py-1.5 rounded-full uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_10px_rgba(0,212,255,0.2)]"
+              className="font-mono text-[10px] px-3 py-1.5 rounded-full uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_10px_rgba(56,189,248,0.2)] text-slate-300"
               style={{
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.7)',
+                border: '1px solid rgba(255,255,255,0.08)',
                 background: 'rgba(255,255,255,0.03)',
               }}
             >
@@ -143,14 +158,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
         </div>
 
         {/* Links */}
-        <div className="flex gap-3" style={{ transform: 'translateZ(20px)' }}>
+        <div className="flex gap-3" style={{ transform: 'translateZ(18px)' }}>
           {project.githubUrl && (
             <a
               href={project.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
               data-cursor-text="Open"
-              className="glass-liquid text-white hover:text-black hover:bg-white transition-all px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2 font-bold cursor-pointer"
+              className="glass-liquid text-slate-200 hover:text-black hover:bg-white transition-all px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2 font-medium cursor-pointer"
               aria-label={`View ${project.name} on GitHub`}
             >
               <GitHubIcon />
@@ -163,7 +178,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
               target="_blank"
               rel="noopener noreferrer"
               data-cursor-text="Open"
-              className="glass-liquid text-white hover:text-black hover:bg-white transition-all px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2 font-bold cursor-pointer"
+              className="glass-liquid text-slate-200 hover:text-black hover:bg-white transition-all px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2 font-medium cursor-pointer"
               aria-label={`View ${project.name} live demo`}
             >
               <ExternalLinkIcon />
@@ -222,7 +237,8 @@ const Projects: React.FC = () => {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-16"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-text-base mb-4">Projects</h2>
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-slate-100 mb-4 tracking-tight">Projects</h2>
+          <p className="text-slate-400 font-body max-w-xl mx-auto">Production-grade AI architectures, semantic retrieval engines, and full-stack systems</p>
           <motion.div
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -233,7 +249,7 @@ const Projects: React.FC = () => {
           />
         </motion.div>
 
-        {/* ═══ Featured project card ═══ */}
+        {/* ═══ Featured project card with 3D Semantic Cluster ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 50, filter: 'blur(8px)' }}
           whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -252,7 +268,7 @@ const Projects: React.FC = () => {
             className="absolute top-0 left-0 right-0 h-[2px]"
             style={{
               background: 'linear-gradient(90deg, var(--aurora-1), var(--aurora-2), var(--aurora-3))',
-              boxShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
+              boxShadow: '0 0 20px rgba(56, 189, 248, 0.25)',
             }}
           />
 
@@ -260,33 +276,33 @@ const Projects: React.FC = () => {
           <div
             className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
             style={{
-              background: `radial-gradient(600px circle at ${featuredGlow.x}% ${featuredGlow.y}%, rgba(0, 212, 255, 0.04), transparent 50%)`,
+              background: `radial-gradient(600px circle at ${featuredGlow.x}% ${featuredGlow.y}%, rgba(56, 189, 248, 0.05), transparent 50%)`,
             }}
           />
 
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            {/* Left: Content */}
-            <div>
-              <span
-                className="inline-block font-mono text-[10px] uppercase tracking-[0.3em] mb-3 px-3 py-1 rounded-full"
-                style={{
-                  border: '1px solid rgba(0, 212, 255, 0.3)',
-                  color: 'var(--aurora-1)',
-                }}
-              >
-                Featured
-              </span>
-              <h3 className="font-display text-2xl font-bold text-text-base mb-4">{featuredProject.name}</h3>
-              <p className="text-text-muted font-body text-sm leading-relaxed mb-6">{featuredProject.description}</p>
+          <div className="grid lg:grid-cols-12 gap-8 items-center">
+            {/* Left: Content (7 cols) */}
+            <div className="lg:col-span-7">
+              <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-sky-300 font-semibold">
+                  Featured Architecture
+                </span>
+              </div>
+              <h3 className="font-display text-2xl sm:text-3xl font-bold text-slate-100 mb-2 tracking-tight">
+                {featuredProject.name}
+              </h3>
+              {featuredProject.subtitle && (
+                <p className="font-mono text-xs text-sky-300/90 mb-4 font-medium">{featuredProject.subtitle}</p>
+              )}
+              <p className="text-slate-300 font-body text-sm sm:text-base leading-relaxed mb-6">
+                {featuredProject.description}
+              </p>
               <div className="flex flex-wrap gap-2">
                 {featuredProject.techStack.map((tech) => (
                   <span
                     key={tech}
-                    className="font-mono text-xs px-2 py-1 rounded-full"
-                    style={{
-                      border: '1px solid rgba(0, 212, 255, 0.25)',
-                      color: 'rgba(0, 212, 255, 0.8)',
-                    }}
+                    className="font-mono text-xs px-3 py-1 rounded-full border border-sky-400/20 bg-sky-500/5 text-slate-200"
                   >
                     {tech}
                   </span>
@@ -294,30 +310,9 @@ const Projects: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Decorative data pipeline grid */}
-            <div className="hidden md:grid grid-cols-6 grid-rows-4 gap-2" aria-hidden="true">
-              {Array.from({ length: 24 }).map((_, i) => {
-                const isActive = [2, 5, 8, 9, 14, 17, 20, 23].includes(i);
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.03 }}
-                    className="aspect-square rounded-md"
-                    style={{
-                      background: isActive
-                        ? 'rgba(0, 212, 255, 0.15)'
-                        : 'rgba(255, 255, 255, 0.02)',
-                      border: isActive
-                        ? '1px solid rgba(0, 212, 255, 0.3)'
-                        : '1px solid rgba(255, 255, 255, 0.05)',
-                      boxShadow: isActive ? '0 0 10px rgba(0, 212, 255, 0.15)' : 'none',
-                    }}
-                  />
-                );
-              })}
+            {/* Right: Live Interactive 3D Semantic Vector Space (5 cols) */}
+            <div className="lg:col-span-5 w-full">
+              <SemanticCluster3D className="w-full h-72 md:h-80" />
             </div>
           </div>
         </motion.div>
@@ -341,8 +336,8 @@ const Projects: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
             data-cursor-text="Open"
-            className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-all px-6 py-3 rounded-lg font-mono text-sm cursor-pointer glow-button"
-            style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+            className="inline-flex items-center gap-2 text-slate-300 hover:text-white transition-all px-6 py-3 rounded-lg font-mono text-sm cursor-pointer glow-button"
+            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <GitHubIcon />
             View More on GitHub
