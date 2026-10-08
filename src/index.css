@@ -398,6 +398,39 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   PIPELINE LINK — packet travelling between architecture stages
+   ═══════════════════════════════════════════════════════════════════ */
+.pipe-link {
+  position: relative;
+  width: 22px;
+  height: 1px;
+  margin: 0 4px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), rgba(129, 140, 248, 0.4));
+}
+
+.pipe-link::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: #7dd3fc;
+  box-shadow: 0 0 8px #38bdf8;
+  opacity: 0;
+  animation: pipe-packet 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation-delay: inherit;
+}
+
+@keyframes pipe-packet {
+  0% { transform: translateX(0); opacity: 0; }
+  15% { opacity: 1; }
+  60% { transform: translateX(17px); opacity: 1; }
+  75%, 100% { transform: translateX(17px); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    PREFERS REDUCED MOTION
    ═══════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

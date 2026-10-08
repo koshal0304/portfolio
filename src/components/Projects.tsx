@@ -1,68 +1,9 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import SemanticCluster3D from './SemanticCluster3D';
+import SafeBoundary from './SafeBoundary';
+import { featuredProject, additionalProjects, type Project } from '../data/profile';
 
-interface Project {
-  id: string;
-  name: string;
-  subtitle?: string;
-  description: string;
-  techStack: string[];
-  githubUrl?: string;
-  liveDemoUrl?: string;
-  featured?: boolean;
-}
-
-const featuredProject: Project = {
-  id: 'image-retrieval',
-  name: 'AI-Powered Image Retrieval System',
-  subtitle: 'Semantic Image Search App | CLIP, FAISS, Flask, React',
-  description:
-    'Full-stack semantic image search app using CLIP embeddings and FAISS for fast similarity search across 1000+ images, with a Flask REST API delivering sub-second query times. Features K-means clustering, hybrid text-image search with weighted scoring, real-time upload with auto-embedding, and an interactive Material-UI frontend (drag-and-drop, infinite scroll, favorites, confidence scores).',
-  techStack: ['CLIP', 'FAISS', 'Flask', 'React', 'Material-UI', 'Python', 'K-Means'],
-  featured: true,
-};
-
-const additionalProjects: Project[] = [
-  {
-    id: 'knowledge-assistant',
-    name: 'Personal Knowledge Assistant',
-    subtitle: 'RAG Chatbot | Gemini, LangChain, Pinecone',
-    description:
-      'RAG-based chatbot using Google Gemini, LangChain, and Streamlit, with a document pipeline using BGE embeddings and Pinecone for semantic search and retrieval. Modular architecture with configurable chunking, retrieval, and prompt engineering.',
-    techStack: ['Gemini API', 'LangChain', 'Pinecone', 'BGE Embeddings', 'Streamlit', 'Python'],
-    githubUrl: 'https://github.com/koshal0304/personal-knowledge-assistant',
-    liveDemoUrl: 'https://personal-knowledge-assistant-g.streamlit.app/',
-  },
-  {
-    id: 'object-detection',
-    name: 'Real-Time Object Detection & Monitoring',
-    subtitle: 'Vision Pipeline | OpenCV, PyTorch, Gemini API',
-    description:
-      'Phone-usage detection app with RTSP video stream via OpenCV. Concurrent GPU inference via ThreadPoolExecutor with tenacity retries and live Matplotlib/Seaborn dashboard.',
-    techStack: ['Streamlit', 'Gemini API', 'OpenCV', 'PyTorch', 'ThreadPoolExecutor'],
-  },
-  {
-    id: 'yolo-detector',
-    name: 'Webcam YOLO Object Detector',
-    subtitle: 'Real-Time Vision | YOLO, OpenCV, Streamlit',
-    description:
-      'Real-time object detection application using YOLO algorithm to identify objects through webcam feed with high accuracy and low latency.',
-    techStack: ['Python', 'Streamlit', 'OpenCV', 'YOLO', 'Computer Vision'],
-    githubUrl: 'https://github.com/koshal0304/webcamyolodetector',
-    liveDemoUrl: 'https://webcamyolodetector-l.streamlit.app/',
-  },
-  {
-    id: 'talent-scout',
-    name: 'Talent Scout AI Hiring Assistant',
-    subtitle: 'AI Talent Screening | NLP & Document Parsing',
-    description:
-      'AI-powered application that helps recruiters identify top candidates based on semantic resume analysis and job descriptions, streamlining technical screening.',
-    techStack: ['Python', 'Streamlit', 'NLP', 'Machine Learning', 'Document Processing'],
-    githubUrl: 'https://github.com/koshal0304/talent-scout-ai',
-    liveDemoUrl: 'https://talentscoutaihiringassistant.streamlit.app/',
-  },
-];
+const SemanticCluster3D = lazy(() => import('./SemanticCluster3D'));
 
 // ─── GitHub SVG Icon ──────────────────────────────────────────────
 const GitHubIcon: React.FC = () => (
@@ -79,6 +20,22 @@ const ExternalLinkIcon: React.FC = () => (
     <polyline points="15 3 21 3 21 9" />
     <line x1="10" y1="14" x2="21" y2="3" />
   </svg>
+);
+
+// ─── Architecture strip: data-flow stages with packets travelling through them ──
+const PipelineFlow: React.FC<{ steps: string[] }> = ({ steps }) => (
+  <ol className="flex flex-wrap items-center gap-y-2 mb-5" aria-label="Architecture data flow">
+    {steps.map((step, i) => (
+      <li key={step} className="flex items-center">
+        <span className="font-mono text-[10px] px-2.5 py-1 rounded-md border border-sky-400/20 bg-sky-500/[0.06] text-sky-100/90 whitespace-nowrap">
+          {step}
+        </span>
+        {i < steps.length - 1 && (
+          <span className="pipe-link" style={{ animationDelay: `${i * 0.35}s` }} aria-hidden="true" />
+        )}
+      </li>
+    ))}
+  </ol>
 );
 
 // ─── Project Card with 3D Tilt + Holographic Shimmer ──────────────
@@ -140,6 +97,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
           <p className="font-mono text-xs text-sky-300/90 mb-3">{project.subtitle}</p>
         )}
         <p className="text-slate-300 font-body text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
+        <PipelineFlow steps={project.pipeline} />
 
         {/* Tech tags */}
         <div className="flex flex-wrap gap-2 mb-5" style={{ transform: 'translateZ(12px)' }}>
@@ -298,6 +256,7 @@ const Projects: React.FC = () => {
               <p className="text-slate-300 font-body text-sm sm:text-base leading-relaxed mb-6">
                 {featuredProject.description}
               </p>
+              <PipelineFlow steps={featuredProject.pipeline} />
               <div className="flex flex-wrap gap-2">
                 {featuredProject.techStack.map((tech) => (
                   <span
@@ -312,7 +271,11 @@ const Projects: React.FC = () => {
 
             {/* Right: Live Interactive 3D Semantic Vector Space (5 cols) */}
             <div className="lg:col-span-5 w-full">
-              <SemanticCluster3D className="w-full h-72 md:h-80" />
+              <SafeBoundary>
+                <Suspense fallback={<div className="w-full h-72 md:h-80 rounded-xl glass-panel" />}>
+                  <SemanticCluster3D className="w-full h-72 md:h-80" />
+                </Suspense>
+              </SafeBoundary>
             </div>
           </div>
         </motion.div>

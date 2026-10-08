@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Cpu, ChevronDown, ArrowRight } from 'lucide-react';
-import { NeuralMode } from './NeuralCodeScene3D';
+import { Sparkles, Cpu, ChevronDown, ArrowRight, Search } from 'lucide-react';
+import type { NeuralMode } from './NeuralCodeScene3D';
+import { openPalette } from '../lib/askLab';
 
 const SPECIALTIES = [
   'Multi-Agent Systems (LangGraph)',
@@ -9,6 +10,14 @@ const SPECIALTIES = [
   'Schema-Aware NL-to-SQL Engines',
   'Production LLM Guardrails',
   'Vector Embedding Retrieval',
+];
+
+// The numbers a recruiter should see in the first five seconds.
+const PROOF = [
+  { value: '0.48 → 0.81', label: 'RAG recall, +69%' },
+  { value: '6+', label: 'AI systems in production' },
+  { value: '−60%', label: 'S3 storage cost' },
+  { value: '98%', label: 'ResNet18 val. accuracy' },
 ];
 
 interface HeroProps {
@@ -167,6 +176,39 @@ const Hero: React.FC<HeroProps> = ({ active3DMode = 'attention', on3DModeChange 
             <ArrowRight className="w-4 h-4" />
           </a>
         </motion.div>
+
+        {/* Proof strip — measured outcomes, not adjectives */}
+        <motion.dl
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.6 }}
+          className="mt-12 w-full max-w-3xl grid grid-cols-2 md:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-white/[0.08] bg-[#1a1f29]"
+        >
+          {PROOF.map((p) => (
+            <div key={p.label} className="px-4 py-4 flex flex-col-reverse items-center gap-1 bg-[#080b12]/85 backdrop-blur-md">
+              <dt className="font-mono text-[10px] uppercase tracking-wider text-slate-400 text-center">{p.label}</dt>
+              <dd className="font-display text-xl sm:text-2xl font-bold text-gradient-soft tabular-nums whitespace-nowrap">
+                {p.value}
+              </dd>
+            </div>
+          ))}
+        </motion.dl>
+
+        <motion.button
+          type="button"
+          onClick={openPalette}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.1, duration: 0.6 }}
+          className="mt-6 inline-flex items-center gap-2 font-mono text-[11px] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">
+            Press <kbd className="px-1.5 py-0.5 rounded border border-white/15 text-slate-300">/</kbd> to semantically search my
+            experience
+          </span>
+          <span className="md:hidden">Tap to semantically search my experience</span>
+        </motion.button>
       </div>
     </section>
   );

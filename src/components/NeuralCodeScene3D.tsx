@@ -271,6 +271,7 @@ const AttentionMesh: React.FC = () => {
     <group ref={groupRef}>
       {/* Curved attention synapse lines */}
       {curveObjects.map((c, i) => (
+        // @ts-expect-error R3F <line> (THREE.Line) collides with the SVG <line> JSX type
         <line key={i} geometry={c.geometry}>
           <lineBasicMaterial color={c.color} transparent opacity={0.14} blending={THREE.AdditiveBlending} />
         </line>
@@ -376,6 +377,7 @@ const LangGraphDAG: React.FC = () => {
     <group ref={groupRef}>
       {/* DAG Connections */}
       {edgeGeometries.map((e, idx) => (
+        // @ts-expect-error R3F <line> (THREE.Line) collides with the SVG <line> JSX type
         <line key={idx} geometry={e.geo}>
           <lineBasicMaterial color="#38bdf8" transparent opacity={0.25} blending={THREE.AdditiveBlending} />
         </line>
@@ -743,7 +745,7 @@ const NeuralCodeScene3D: React.FC<NeuralCodeScene3DProps> = ({
         <InteractiveCameraController mouse={mouse} scrollProgress={scrollProgress} />
 
         {/* Post-Processing Bloom — Soft, Cinematic & Clean */}
-        <EffectComposer disableNormalPass multisampling={0}>
+        <EffectComposer multisampling={0}>
           <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.7} intensity={0.45} />
         </EffectComposer>
       </Canvas>

@@ -1,7 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { Search } from 'lucide-react';
 import { useActiveSection } from '../utils/useActiveSection';
-import NavHologram3D from './NavHologram3D';
+import { openPalette } from '../lib/askLab';
+import SafeBoundary from './SafeBoundary';
+
+// three.js stays out of the critical bundle; the badge streams in with the 3D chunk.
+const NavHologram3D = lazy(() => import('./NavHologram3D'));
+const hologram = (
+  <SafeBoundary>
+    <Suspense fallback={<div className="w-10 h-10" />}>
+      <NavHologram3D />
+    </Suspense>
+  </SafeBoundary>
+);
+const MOD_KEY = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl ';
 
 const NAV_LINKS = [
   { label: 'About', href: '#hero' },
@@ -106,6 +119,16 @@ const Navbar: React.FC = () => {
         </a>
       </div>
 
+      {/* Mobile search — opens the same command palette */}
+      <button
+        type="button"
+        onClick={openPalette}
+        aria-label="Search my experience"
+        className="md:hidden fixed top-5 right-20 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-[#080d1a]/90 backdrop-blur-xl border border-white/15 shadow-[0_4px_25px_rgba(0,0,0,0.5)] text-slate-200"
+      >
+        <Search className="w-5 h-5" />
+      </button>
+
       {/* Mobile Menu Button — Floating Top Right */}
       <div className="md:hidden fixed top-5 right-5 z-50">
         <button
@@ -173,7 +196,7 @@ const Navbar: React.FC = () => {
 
             {/* Embedded 3D Hologram Core with Status */}
             <div style={{ transform: 'translateZ(26px)' }} className="flex items-center">
-              <NavHologram3D />
+              {hologram}
               {/* Divider between 3D core & links */}
               <div className="h-5 w-[1px] bg-white/10 mx-1.5" />
             </div>
@@ -225,6 +248,18 @@ const Navbar: React.FC = () => {
                 );
               })}
             </ul>
+
+            <button
+              type="button"
+              onClick={openPalette}
+              aria-label="Search (command palette)"
+              title="Semantic search across my experience"
+              style={{ transform: 'translateZ(18px)' }}
+              className="ml-1 flex items-center gap-1.5 pl-2.5 pr-2 py-1 rounded-full border border-white/10 bg-white/[0.03] hover:border-sky-400/40 text-slate-300 hover:text-white transition-colors"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <kbd className="font-mono text-[10px] text-slate-400">{MOD_KEY}K</kbd>
+            </button>
           </nav>
         </motion.div>
       </header>
@@ -245,7 +280,7 @@ const Navbar: React.FC = () => {
 
             {/* Mobile 3D Hologram Badge */}
             <div className="mb-8 flex items-center justify-center scale-125">
-              <NavHologram3D />
+              {hologram}
             </div>
 
             <nav className="w-full max-w-xs">

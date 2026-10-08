@@ -73,7 +73,7 @@ const Achievements: React.FC = () => {
   const { ref, inView } = useInView({ threshold: 0.5, triggerOnce: true });
 
   return (
-    <section className="bg-surface/70 py-24 relative overflow-hidden">
+    <section id="achievements" className="bg-surface/70 py-24 relative overflow-hidden">
       {/* Background aurora orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
         <div

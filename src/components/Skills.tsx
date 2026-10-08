@@ -3,87 +3,8 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Html, OrbitControls } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import * as THREE from 'three';
+import { ALL_SKILLS, type SkillData } from '../data/profile';
 
-interface SkillData {
-  name: string;
-  category: string;
-}
-
-const ALL_SKILLS: SkillData[] = [
-  // LLM & Agents
-  { name: 'LangGraph', category: 'LLM & Agents' },
-  { name: 'LangChain', category: 'LLM & Agents' },
-  { name: 'Multi-Agent Systems', category: 'LLM & Agents' },
-  { name: 'RAG Pipelines', category: 'LLM & Agents' },
-  { name: 'Agentic RAG', category: 'LLM & Agents' },
-  { name: 'NL-to-SQL Engines', category: 'LLM & Agents' },
-  { name: 'Prompt Engineering', category: 'LLM & Agents' },
-  { name: 'Evaluation Harnesses', category: 'LLM & Agents' },
-  { name: 'Model Context Protocol (MCP)', category: 'LLM & Agents' },
-  { name: 'Semantic Routing', category: 'LLM & Agents' },
-  { name: 'LLM Fine-Tuning', category: 'LLM & Agents' },
-
-  // Model APIs & Retrieval
-  { name: 'OpenAI API', category: 'Model APIs & Retrieval' },
-  { name: 'Azure OpenAI', category: 'Model APIs & Retrieval' },
-  { name: 'Google Gemini API', category: 'Model APIs & Retrieval' },
-  { name: 'Hugging Face', category: 'Model APIs & Retrieval' },
-  { name: 'Vector Search', category: 'Model APIs & Retrieval' },
-  { name: 'Hybrid Search', category: 'Model APIs & Retrieval' },
-  { name: 'Embeddings (BGE/CLIP)', category: 'Model APIs & Retrieval' },
-  { name: 'Pinecone', category: 'Model APIs & Retrieval' },
-  { name: 'FAISS', category: 'Model APIs & Retrieval' },
-  { name: 'ChromaDB', category: 'Model APIs & Retrieval' },
-  { name: 'LlamaIndex', category: 'Model APIs & Retrieval' },
-
-  // Backend & APIs
-  { name: 'Python', category: 'Backend & APIs' },
-  { name: 'FastAPI', category: 'Backend & APIs' },
-  { name: 'Node.js', category: 'Backend & APIs' },
-  { name: 'TypeScript', category: 'Backend & APIs' },
-  { name: 'Django', category: 'Backend & APIs' },
-  { name: 'Async SQLAlchemy', category: 'Backend & APIs' },
-  { name: 'REST API Design', category: 'Backend & APIs' },
-  { name: 'JWT / OAuth2', category: 'Backend & APIs' },
-  { name: 'Redis', category: 'Backend & APIs' },
-  { name: 'Celery', category: 'Backend & APIs' },
-  { name: 'WebSockets', category: 'Backend & APIs' },
-  { name: 'Prisma ORM', category: 'Backend & APIs' },
-  { name: 'Microsoft Graph API', category: 'Backend & APIs' },
-
-  // Cloud & Infra
-  { name: 'AWS (S3, EC2, Lambda)', category: 'Cloud & Infra' },
-  { name: 'Boto3', category: 'Cloud & Infra' },
-  { name: 'Docker', category: 'Cloud & Infra' },
-  { name: 'Azure DevOps', category: 'Cloud & Infra' },
-  { name: 'GitHub Actions', category: 'Cloud & Infra' },
-  { name: 'Microservices', category: 'Cloud & Infra' },
-  { name: 'Rate-Limiting Middleware', category: 'Cloud & Infra' },
-  { name: 'Structured Logging', category: 'Cloud & Infra' },
-
-  // Data & ML
-  { name: 'PyTorch', category: 'Data & ML' },
-  { name: 'TensorFlow', category: 'Data & ML' },
-  { name: 'scikit-learn', category: 'Data & ML' },
-  { name: 'ResNet18', category: 'Data & ML' },
-  { name: 'DistilBERT', category: 'Data & ML' },
-  { name: 'YOLO', category: 'Data & ML' },
-  { name: 'Computer Vision', category: 'Data & ML' },
-  { name: 'OpenCV', category: 'Data & ML' },
-  { name: 'Sentence Transformers', category: 'Data & ML' },
-  { name: 'SQLGlot', category: 'Data & ML' },
-  { name: 'Pandas', category: 'Data & ML' },
-  { name: 'NumPy', category: 'Data & ML' },
-  { name: 'MLflow', category: 'Data & ML' },
-  { name: 'Weights & Biases', category: 'Data & ML' },
-
-  // Databases
-  { name: 'PostgreSQL', category: 'Databases' },
-  { name: 'MongoDB', category: 'Databases' },
-  { name: 'MySQL', category: 'Databases' },
-  { name: 'Redis (Cache/Queue)', category: 'Databases' },
-  { name: 'Pinecone (Vector DB)', category: 'Databases' },
-];
 
 const CATEGORIES = [
   'All',
@@ -156,6 +77,7 @@ const SkillSphere: React.FC<SkillSphereProps> = ({ skills, activeCategory }) => 
 
       {/* Constellation Synapse Filaments */}
       {constellationLines.map((line, idx) => (
+        // @ts-expect-error R3F <line> (THREE.Line) collides with the SVG <line> JSX type
         <line key={idx} geometry={line}>
           <lineBasicMaterial
             color="#38bdf8"

@@ -1,26 +1,32 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Experience from './components/Experience';
 import Projects from './components/Projects';
-import Skills from './components/Skills';
 import Achievements from './components/Achievements';
 import Education from './components/Education';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
-import NeuralCodeScene3D, { NeuralMode } from './components/NeuralCodeScene3D';
+import type { NeuralMode } from './components/NeuralCodeScene3D';
+import CommandPalette from './components/CommandPalette';
+import SafeBoundary from './components/SafeBoundary';
 import AIEngineerSandbox from './components/AIEngineerSandbox';
 import SectionDivider from './components/SectionDivider';
 import Cursor3D from './components/Cursor3D';
 import { Sparkles } from 'lucide-react';
+
+// three.js-heavy modules ship as separate chunks; the loader waits on the scene for real.
+const loadScene = () => import('./components/NeuralCodeScene3D');
+const NeuralCodeScene3D = lazy(loadScene);
+const Skills = lazy(() => import('./components/Skills'));
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
   const [active3DMode, setActive3DMode] = useState<NeuralMode>('attention');
 
-  // Scroll progress for HeroScene3D
+  // Scroll progress drives the background scene
   const { scrollYProgress } = useScroll();
   const scrollProgress = useTransform(scrollYProgress, [0, 1], [0, 1]);
   const [scrollVal, setScrollVal] = useState(0);
@@ -30,18 +36,22 @@ function App() {
     return () => unsubscribe();
   }, [scrollProgress]);
 
-  // Simulate cinematic loading with progress
+  // Progress tracks the real 3D chunk download; 900ms floor lets the reveal animation play.
   useEffect(() => {
+    let ready = false;
+    const settle = () => {
+      ready = true;
+    };
+    loadScene().then(settle, settle);
+    const start = performance.now();
     let progress = 0;
     const interval = setInterval(() => {
-      // Non-linear loading — fast start, slow middle, fast finish
-      const remaining = 100 - progress;
-      const increment = remaining > 60 ? 3 : remaining > 20 ? 1.5 : 4;
-      progress = Math.min(100, progress + increment);
+      const done = ready && performance.now() - start > 900;
+      progress = done ? 100 : progress + (92 - progress) * 0.06;
       setLoadProgress(progress);
-      if (progress >= 100) {
+      if (done) {
         clearInterval(interval);
-        setTimeout(() => setIsLoading(false), 400);
+        setTimeout(() => setIsLoading(false), 250);
       }
     }, 40);
     return () => clearInterval(interval);
@@ -165,7 +175,8 @@ function App() {
     <>
       <AnimatePresence mode="wait">
         {isLoading ? (
-          <LoadingScreen />
+          // Called, not mounted: a component defined in render would remount (and restart its animations) every tick.
+          LoadingScreen()
         ) : (
           <motion.div
             key="content"
@@ -175,10 +186,12 @@ function App() {
             className="min-h-screen font-body text-slate-200 bg-transparent noise-overlay"
           >
             {/* Interactive 3D Neural Code Matrix Background */}
-            <NeuralCodeScene3D
-              scrollProgress={scrollVal}
-              activeMode={active3DMode}
-            />
+            <SafeBoundary>
+              <Suspense fallback={null}>
+                <NeuralCodeScene3D scrollProgress={scrollVal} activeMode={active3DMode} />
+              </Suspense>
+            </SafeBoundary>
+            <CommandPalette />
 
             {/* Main content */}
             <div className="relative z-10 selection:bg-sky-500/30 selection:text-sky-100">
@@ -197,7 +210,8 @@ function App() {
                     AI Engineering Lab
                   </h2>
                   <p className="text-slate-400 font-body text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-                    Test live multi-agent reasoning, schema-aware NL-to-SQL generation, and adversarial prompt injection defenses.
+                    Query a working hybrid-retrieval engine over my career and watch it rank evidence in 3D, explore
+                    production architectures, and attack a live guardrail. Everything runs in your browser.
                   </p>
                 </div>
                 <AIEngineerSandbox />
@@ -206,7 +220,11 @@ function App() {
               <SectionDivider />
               <Experience />
               <SectionDivider />
-              <Skills />
+              <SafeBoundary>
+                <Suspense fallback={<section id="skills" className="min-h-[600px]" />}>
+                  <Skills />
+                </Suspense>
+              </SafeBoundary>
               <SectionDivider />
               <Projects />
               <SectionDivider />

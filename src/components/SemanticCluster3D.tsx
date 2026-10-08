@@ -112,6 +112,7 @@ const VectorSpace: React.FC = () => {
 
       {/* Nearest Neighbor Search Rays */}
       {neighborLines.map((lineGeo, idx) => (
+        // @ts-expect-error R3F <line> (THREE.Line) collides with the SVG <line> JSX type
         <line key={idx} geometry={lineGeo}>
           <lineDashedMaterial
             color="#34d399"
@@ -151,7 +152,7 @@ const VectorSpace: React.FC = () => {
 
             {/* Hover Tooltip */}
             {hoveredIdx === i && (
-              <Html distanceFactor={8} position={[0, 0.2, 0]} center>
+              <Html position={[0, 0.2, 0]} center>
                 <div className="px-2 py-1 rounded bg-[#0c1017]/95 border border-white/20 text-[10px] font-mono text-slate-200 shadow-xl whitespace-nowrap pointer-events-none">
                   <span className="text-sky-400 font-bold">{pt.label}</span>
                   <div className="text-emerald-400">Cosine: {pt.simScore}</div>
@@ -163,7 +164,7 @@ const VectorSpace: React.FC = () => {
       })}
 
       {/* Floating Query Label */}
-      <Html position={[queryPoint.x, queryPoint.y + 0.22, queryPoint.z]} center distanceFactor={8}>
+      <Html position={[queryPoint.x, queryPoint.y + 0.22, queryPoint.z]} center>
         <div className="px-2 py-0.5 rounded-full bg-[#0c1017]/90 border border-sky-400/40 text-[9px] font-mono text-sky-200 tracking-wider whitespace-nowrap shadow-lg pointer-events-none">
           QUERY_VECTOR (CLIP)
         </div>
