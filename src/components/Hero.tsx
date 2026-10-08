@@ -179,6 +179,7 @@ const Hero: React.FC<HeroProps> = ({ active3DMode = 'attention', on3DModeChange 
 
         {/* Proof strip — measured outcomes, not adjectives */}
         <motion.dl
+          data-guide="proof"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9, duration: 0.6 }}

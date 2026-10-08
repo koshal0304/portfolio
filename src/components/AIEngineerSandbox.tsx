@@ -371,6 +371,7 @@ const AIEngineerSandbox: React.FC = () => {
                 <span>RAG & SQL Pipeline</span>
               </button>
               <button
+                data-guide="defense-tab"
                 onClick={() => setActiveTab('guardrails')}
                 className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-md font-mono text-xs transition-all cursor-pointer ${
                   activeTab === 'guardrails'

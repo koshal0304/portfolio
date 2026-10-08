@@ -62,7 +62,7 @@ const Education: React.FC = () => {
           />
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div data-guide="education" className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Degree Card */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}

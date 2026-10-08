@@ -124,7 +124,7 @@ const Achievements: React.FC = () => {
           />
         </motion.div>
 
-        <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+        <div ref={ref} data-guide="metrics" className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
           {metrics.map((metric, idx) => (
             <motion.div
               key={idx}

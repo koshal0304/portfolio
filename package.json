@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "check:retrieval": "node scripts/retrieval.check.ts",
+    "voice": "node scripts/voice-lines.ts | ${TTS_PYTHON:-.venv-tts/bin/python} scripts/voice.py",
     "preview": "vite preview"
   },
   "dependencies": {

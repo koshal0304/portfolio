@@ -218,7 +218,7 @@ const Skills: React.FC = () => {
         </motion.div>
 
         {/* 3D Constellation Sphere or Mobile Grid */}
-        <div className="h-[500px] md:h-[600px] mb-8">
+        <div data-guide="skills-sphere" className="h-[500px] md:h-[600px] mb-8">
           {isMobile ? (
             <div className="h-full flex items-center">
               <MobileSkillGrid skills={ALL_SKILLS} activeCategory={activeCategory} />

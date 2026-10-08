@@ -11,6 +11,7 @@ import Footer from './components/Footer';
 import type { NeuralMode } from './components/NeuralCodeScene3D';
 import CommandPalette from './components/CommandPalette';
 import SafeBoundary from './components/SafeBoundary';
+import AIGuide from './components/guide/AIGuide';
 import AIEngineerSandbox from './components/AIEngineerSandbox';
 import SectionDivider from './components/SectionDivider';
 import Cursor3D from './components/Cursor3D';
@@ -192,6 +193,7 @@ function App() {
               </Suspense>
             </SafeBoundary>
             <CommandPalette />
+            <AIGuide />
 
             {/* Main content */}
             <div className="relative z-10 selection:bg-sky-500/30 selection:text-sky-100">

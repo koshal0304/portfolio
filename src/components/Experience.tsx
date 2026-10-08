@@ -86,7 +86,10 @@ const Experience: React.FC = () => {
                 </div>
 
                 {/* Card — holographic shimmer */}
-                <div className="glass-liquid holo-card rounded-2xl p-6 md:p-8 border border-white/[0.08] hover:border-white/20 transition-all">
+                <div
+                  data-guide={idx === 0 ? 'current-role' : undefined}
+                  className="glass-liquid holo-card rounded-2xl p-6 md:p-8 border border-white/[0.08] hover:border-white/20 transition-all"
+                >
                   <div className={`flex flex-col ${isLeft ? 'md:items-end' : 'md:items-start'} gap-2 mb-4`}>
                     <h3 className="font-display text-xl md:text-2xl font-bold text-slate-100">{role.company}</h3>
                     <div className="flex items-center gap-2 flex-wrap text-slate-400 font-mono text-xs sm:text-sm">

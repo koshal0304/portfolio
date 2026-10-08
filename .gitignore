@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# local TTS toolchain for npm run voice
+.venv-tts/
+__pycache__/

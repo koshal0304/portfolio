@@ -431,6 +431,20 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   GUIDE FOCUS — element the AI guide is pointing at
+   ═══════════════════════════════════════════════════════════════════ */
+.guide-focus {
+  outline: 1.5px solid rgba(56, 189, 248, 0.75);
+  outline-offset: 6px;
+  animation: guide-focus-pulse 1.4s ease-in-out 3;
+}
+
+@keyframes guide-focus-pulse {
+  0%, 100% { outline-color: rgba(56, 189, 248, 0.75); outline-offset: 6px; }
+  50% { outline-color: rgba(167, 139, 250, 0.35); outline-offset: 11px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    PREFERS REDUCED MOTION
    ═══════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

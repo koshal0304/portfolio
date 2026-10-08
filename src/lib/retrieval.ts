@@ -234,6 +234,9 @@ function pca3(X: Float64Array[]) {
   return { coords: rawCoords.map((p) => p.map((v) => v * scale) as [number, number, number]), project };
 }
 
+/** Sentence boundary: terminal punctuation, then a capital or digit (keeps "0.48" and "B.Tech" intact). */
+export const SENTENCE_SPLIT = /(?<=[.!?])\s+(?=[A-Z0-9])/;
+
 export interface AnswerSentence {
   text: string;
   /** 1-based citation into `hits`. */
@@ -253,7 +256,7 @@ export function synthesize(r: Retrieval, maxSentences = 3): AnswerSentence[] {
     .map((h, i) => {
       let best = '';
       let bestScore = -Infinity;
-      for (const sentence of h.chunk.text.split(/(?<=[.!?])\s+(?=[A-Z0-9])/)) {
+      for (const sentence of h.chunk.text.split(SENTENCE_SPLIT)) {
         const overlap = new Set(tokenize(sentence).filter((t) => qs.has(t))).size;
         // Prefer prose over comma-separated stack lists when overlap ties.
         const score = overlap - ((sentence.match(/,/g) ?? []).length >= 4 ? 0.5 : 0);

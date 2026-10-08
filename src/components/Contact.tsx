@@ -191,6 +191,7 @@ const Contact: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
                 onSubmit={handleSubmit}
+                data-guide="contact-form"
                 className="space-y-6"
               >
                 {/* Name field with neon focus */}

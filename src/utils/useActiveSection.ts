@@ -2,50 +2,40 @@ import { useState, useEffect } from 'react';
 
 const SECTION_IDS = ['hero', 'ai-sandbox', 'experience', 'skills', 'projects', 'education', 'contact'];
 
-export function useActiveSection(): string {
+/**
+ * Active section = the last section (in DOM order) whose top has crossed 40% of the viewport.
+ * Elements are looked up on every check, so lazily-mounted sections are tracked correctly.
+ */
+export function useActiveSection(ids: string[] = SECTION_IDS): string {
   const [activeSection, setActiveSection] = useState<string>(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      const hashId = window.location.hash.replace('#', '');
-      if (SECTION_IDS.includes(hashId)) return hashId;
-    }
-    return 'hero';
+    const hashId = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
+    return ids.includes(hashId) ? hashId : ids[0];
   });
 
   useEffect(() => {
-    const handleHashChange = () => {
-      const hashId = window.location.hash.replace('#', '');
-      if (SECTION_IDS.includes(hashId)) {
-        setActiveSection(hashId);
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = window.innerHeight * 0.4;
+      let current = ids[0];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= line) current = id;
       }
+      setActiveSection(current);
     };
-
-    window.addEventListener('hashchange', handleHashChange);
-
-    const observers: IntersectionObserver[] = [];
-
-    SECTION_IDS.forEach((id) => {
-      const element = document.getElementById(id);
-      if (!element) return;
-
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setActiveSection(id);
-          }
-        },
-        { threshold: 0.25, rootMargin: '-60px 0px -40% 0px' }
-      );
-
-      observer.observe(element);
-      observers.push(observer);
-    });
-
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-      observers.forEach((obs) => obs.disconnect());
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
     };
-  }, []);
+  }, [ids]);
 
   return activeSection;
 }
-

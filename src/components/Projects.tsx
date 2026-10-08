@@ -215,6 +215,7 @@ const Projects: React.FC = () => {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           onMouseMove={handleFeaturedMouseMove}
           onMouseLeave={handleFeaturedMouseLeave}
+          data-guide="featured-project"
           className="glass-liquid holo-card rounded-2xl p-8 md:p-10 relative overflow-hidden cursor-default mb-10 group"
           style={{
             transform: `perspective(1000px) rotateX(${featuredTilt.x}deg) rotateY(${featuredTilt.y}deg)`,
