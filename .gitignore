@@ -26,3 +26,7 @@ dist-ssr
 # local TTS toolchain for npm run voice
 .venv-tts/
 __pycache__/
+
+# Raw downloaded avatar models
+/model*.glb
+

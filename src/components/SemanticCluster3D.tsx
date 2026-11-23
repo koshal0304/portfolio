@@ -1,6 +1,7 @@
 import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Html } from '@react-three/drei';
+import { useInView } from 'react-intersection-observer';
 import * as THREE from 'three';
 
 interface EmbeddingPoint {
@@ -11,9 +12,9 @@ interface EmbeddingPoint {
 }
 
 const CLUSTERS = [
-  { name: 'CLIP Visual Embeddings', color: '#38bdf8' },
-  { name: 'Natural Language Queries', color: '#818cf8' },
-  { name: 'FAISS Nearest Top-K', color: '#34d399' },
+  { name: 'CLIP Visual Embeddings', color: '#f4b678' },
+  { name: 'Natural Language Queries', color: '#a5b4fc' },
+  { name: 'FAISS Nearest Top-K', color: '#7ee0c0' },
 ];
 
 const VectorSpace: React.FC = () => {
@@ -85,7 +86,7 @@ const VectorSpace: React.FC = () => {
       <mesh>
         <sphereGeometry args={[2.5, 16, 16]} />
         <meshBasicMaterial
-          color="#38bdf8"
+          color="#f4b678"
           wireframe
           transparent
           opacity={0.06}
@@ -97,7 +98,7 @@ const VectorSpace: React.FC = () => {
         <sphereGeometry args={[0.08, 20, 20]} />
         <meshStandardMaterial
           color="#ffffff"
-          emissive="#38bdf8"
+          emissive="#f4b678"
           emissiveIntensity={1.2}
           roughness={0.1}
           metalness={0.9}
@@ -107,7 +108,7 @@ const VectorSpace: React.FC = () => {
       {/* Query Pulse Halo */}
       <mesh position={queryPoint}>
         <ringGeometry args={[0.12, 0.15, 32]} />
-        <meshBasicMaterial color="#38bdf8" transparent opacity={0.6} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#f4b678" transparent opacity={0.6} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Nearest Neighbor Search Rays */}
@@ -115,7 +116,7 @@ const VectorSpace: React.FC = () => {
         // @ts-expect-error R3F <line> (THREE.Line) collides with the SVG <line> JSX type
         <line key={idx} geometry={lineGeo}>
           <lineDashedMaterial
-            color="#34d399"
+            color="#7ee0c0"
             dashSize={0.1}
             gapSize={0.05}
             transparent
@@ -128,7 +129,7 @@ const VectorSpace: React.FC = () => {
       {/* Embedding Points */}
       {points.map((pt, i) => {
         const isNeighbor = neighborIndices.includes(i);
-        const color = isNeighbor ? '#34d399' : CLUSTERS[pt.cluster].color;
+        const color = isNeighbor ? '#7ee0c0' : CLUSTERS[pt.cluster].color;
         const size = isNeighbor ? 0.065 : 0.04;
 
         return (
@@ -153,8 +154,8 @@ const VectorSpace: React.FC = () => {
             {/* Hover Tooltip */}
             {hoveredIdx === i && (
               <Html position={[0, 0.2, 0]} center>
-                <div className="px-2 py-1 rounded bg-[#0c1017]/95 border border-white/20 text-[10px] font-mono text-slate-200 shadow-xl whitespace-nowrap pointer-events-none">
-                  <span className="text-sky-400 font-bold">{pt.label}</span>
+                <div className="px-2 py-1 rounded bg-raised/95 border border-white/20 text-[10px] font-mono text-slate-200 shadow-xl whitespace-nowrap pointer-events-none">
+                  <span className="text-accent-300 font-medium">{pt.label}</span>
                   <div className="text-emerald-400">Cosine: {pt.simScore}</div>
                 </div>
               </Html>
@@ -165,7 +166,7 @@ const VectorSpace: React.FC = () => {
 
       {/* Floating Query Label */}
       <Html position={[queryPoint.x, queryPoint.y + 0.22, queryPoint.z]} center>
-        <div className="px-2 py-0.5 rounded-full bg-[#0c1017]/90 border border-sky-400/40 text-[9px] font-mono text-sky-200 tracking-wider whitespace-nowrap shadow-lg pointer-events-none">
+        <div className="px-2 py-0.5 rounded-full bg-raised/90 border border-accent-400/40 text-[9px] font-mono text-accent-200 tracking-wider whitespace-nowrap shadow-lg pointer-events-none">
           QUERY_VECTOR (CLIP)
         </div>
       </Html>
@@ -178,20 +179,22 @@ interface SemanticCluster3DProps {
 }
 
 const SemanticCluster3D: React.FC<SemanticCluster3DProps> = ({ className = '' }) => {
+  // Offscreen it stops rendering: the page already runs the sky and the twin every frame.
+  const { ref, inView } = useInView({ rootMargin: '150px 0px' });
   return (
-    <div className={`relative rounded-xl overflow-hidden glass-panel border border-white/[0.08] ${className}`}>
+    <div ref={ref} className={`relative rounded-[16px] overflow-hidden panel ${className}`}>
       {/* Top Header Tag */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#0c1017]/80 border border-white/10 backdrop-blur pointer-events-none">
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]" />
+      <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-2.5 py-1 rounded-full bg-raised/80 border border-white/10 backdrop-blur pointer-events-none">
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         <span className="font-mono text-[10px] text-slate-300 tracking-wider uppercase">
           3D FAISS Latent Cluster
         </span>
       </div>
 
       {/* Bottom Metrics Pill */}
-      <div className="absolute bottom-3 right-3 z-10 flex items-center gap-3 px-3 py-1 rounded-full bg-[#0c1017]/80 border border-white/10 backdrop-blur pointer-events-none">
+      <div className="absolute bottom-3 right-3 z-10 flex items-center gap-3 px-3 py-1 rounded-full bg-raised/80 border border-white/10 backdrop-blur pointer-events-none">
         <span className="font-mono text-[10px] text-slate-400">
-          Metric: <span className="text-sky-300 font-medium">IndexFlatIP</span>
+          Metric: <span className="text-accent-300 font-medium">IndexFlatIP</span>
         </span>
         <span className="font-mono text-[10px] text-slate-400">
           Recall: <span className="text-emerald-300 font-medium">0.81</span>
@@ -200,10 +203,16 @@ const SemanticCluster3D: React.FC<SemanticCluster3DProps> = ({ className = '' })
 
       {/* 3D Canvas */}
       <div className="w-full h-full min-h-[220px]">
-        <Canvas camera={{ position: [0, 0, 5], fov: 42 }} dpr={[1, 1.5]}>
+        {/* Layout size, not the transformed rect: the deck scales and tilts this card. */}
+        <Canvas
+          camera={{ position: [0, 0, 5], fov: 42 }}
+          dpr={[1, 1.5]}
+          frameloop={inView ? 'always' : 'never'}
+          resize={{ scroll: false, offsetSize: true }}
+        >
           <ambientLight intensity={0.7} />
-          <directionalLight position={[4, 4, 3]} intensity={1.2} color="#38bdf8" />
-          <directionalLight position={[-4, -4, -3]} intensity={0.9} color="#a78bfa" />
+          <directionalLight position={[4, 4, 3]} intensity={1.2} color="#f4b678" />
+          <directionalLight position={[-4, -4, -3]} intensity={0.9} color="#a5b4fc" />
           <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.2}>
             <VectorSpace />
           </Float>

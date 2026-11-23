@@ -15,12 +15,63 @@ export interface Beat {
   parts?: string[];
   /** Small print under the caption, shown but not spoken. */
   note?: string;
+  /** Buttons offered under the caption. */
+  actions?: ('tour' | 'ask')[];
 }
 
 /** Fixed so they can be pre-rendered; details go in `note`. */
 export const REPLIES = {
   blocked: "Nice try. My guardrail caught that as an injection attempt. Ask me about Koshal's work instead?",
   noEvidence: "I don't have evidence for that in Koshal's portfolio, and I don't make things up. Try asking about RAG, agents or computer vision.",
+};
+
+const HELLO = "I'm Koshal's digital twin. He's an AI engineer in Bengaluru who ships production LLM systems, and I'll be your guide.";
+/** The first hello depends on the visitor's clock, and on whether they've been here before. */
+export const GREETINGS = {
+  morning: `Good morning! ${HELLO}`,
+  afternoon: `Good afternoon! ${HELLO}`,
+  evening: `Good evening! ${HELLO}`,
+  returning: 'Welcome back! Good to see you again. Want the quick tour this time, or shall I answer a question?',
+};
+
+export function greeting(): Beat {
+  let returning = false;
+  try {
+    returning = localStorage.getItem('twin:visited') === '1';
+    localStorage.setItem('twin:visited', '1');
+  } catch {
+    // private mode: every visit is a first visit
+  }
+  const hour = new Date().getHours();
+  const text = returning ? GREETINGS.returning : hour < 12 ? GREETINGS.morning : hour < 17 ? GREETINGS.afternoon : GREETINGS.evening;
+  return { text, gesture: 'wave', mood: 'happy', actions: ['tour', 'ask'] };
+}
+
+/** Questions a recruiter tends to ask, one tap away (answered from the knowledge base). */
+export const SUGGESTIONS = ['Why should we hire him?', 'How did he improve RAG recall?', "What's he building right now?", 'Computer vision experience?'];
+
+export const NUDGE: Beat = {
+  text: "Still exploring? I can give you the ninety-second tour whenever you're ready.",
+  gesture: 'wave',
+  mood: 'happy',
+  actions: ['tour'],
+};
+export const SURPRISE: Beat = {
+  text: 'Okay, okay, you found my ticklish spot! Now, shall we look at some real engineering?',
+  gesture: 'celebrate',
+  mood: 'excited',
+  actions: ['tour'],
+};
+export const LISTEN_ERROR: Beat = {
+  text: "Sorry, I didn't catch that. Could you try again, or type it instead?",
+  gesture: 'shrug',
+  mood: 'curious',
+  reply: true,
+};
+export const THANKS: Beat = {
+  text: "Your message is ready to go. He'll be really glad you reached out!",
+  gesture: 'celebrate',
+  mood: 'excited',
 };
 
 /** DOM order matters: the active section is the last one scrolled past. */
@@ -104,7 +155,7 @@ export const SCRIPT: Record<string, Beat[]> = {
   ],
   education: [
     {
-      text: 'A B.Tech in Automation and Robotics, so building a robot guide like me was always on the cards.',
+      text: 'A B.Tech in Automation and Robotics. So building a digital twin like me was always on the cards.',
       gesture: 'nod',
       mood: 'happy',
       focus: '[data-guide="education"]',
@@ -120,8 +171,44 @@ export const SCRIPT: Record<string, Beat[]> = {
   ],
 };
 
+/**
+ * The guided tour: fly to each chapter while saying a short travel line (the way a person talks
+ * while walking you somewhere), then that chapter's beats once you arrive.
+ */
+export const TOUR: { id: string; lead?: Beat; beats: Beat[] }[] = [
+  {
+    id: 'hero',
+    beats: [
+      {
+        text: "Great, let's go. I'll walk you through the highlights in about ninety seconds. Pause me whenever you like.",
+        gesture: 'present',
+        mood: 'happy',
+      },
+      SCRIPT.hero[1],
+    ],
+  },
+  { id: 'ai-sandbox', lead: { text: 'First stop, the lab.', gesture: 'point', mood: 'excited' }, beats: SCRIPT['ai-sandbox'] },
+  { id: 'experience', lead: { text: "Now, where he's been shipping all this.", gesture: 'explain' }, beats: SCRIPT.experience },
+  { id: 'skills', lead: { text: "Here's the stack behind it.", gesture: 'explain' }, beats: SCRIPT.skills },
+  { id: 'projects', lead: { text: 'And now, the work itself.', gesture: 'present', mood: 'excited' }, beats: SCRIPT.projects },
+  { id: 'achievements', lead: { text: 'So, what did it all add up to?', gesture: 'think', mood: 'curious' }, beats: SCRIPT.achievements },
+  { id: 'education', lead: { text: 'Last stop, where it all started.', gesture: 'explain' }, beats: SCRIPT.education },
+  {
+    id: 'contact',
+    beats: [
+      {
+        text: "And that's the tour! If he sounds like a fit for your team, the form is right here. Or ask me anything first. Thanks for stopping by.",
+        gesture: 'wave',
+        mood: 'happy',
+        focus: '[data-guide="contact-form"]',
+        actions: ['ask'],
+      },
+    ],
+  },
+];
+
 export const QUIPS: Beat[] = [
   { text: 'Hello again! Ask me anything about Koshal\'s work. I only answer from real evidence.', gesture: 'wave', mood: 'happy' },
-  { text: "I'm rendered live with a custom hologram shader. No video, no pre-baked animation.", gesture: 'present', mood: 'curious' },
+  { text: "I'm rendered live in your browser, no video. Every blink and glance is computed in real time.", gesture: 'present', mood: 'curious' },
   { text: 'Every gesture you see is computed from where things are on the page, frame by frame.', gesture: 'explain' },
 ];

@@ -1,16 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, Cpu, ChevronDown, ArrowRight, Search } from 'lucide-react';
-import type { NeuralMode } from './NeuralCodeScene3D';
-import { openPalette } from '../lib/askLab';
-
-const SPECIALTIES = [
-  'Multi-Agent Systems (LangGraph)',
-  'Enterprise RAG Pipelines',
-  'Schema-Aware NL-to-SQL Engines',
-  'Production LLM Guardrails',
-  'Vector Embedding Retrieval',
-];
+import React, { useRef } from 'react';
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { ArrowDownRight, AudioLines, Search } from 'lucide-react';
+import { openPalette, startTour } from '../lib/askLab';
+import { Magnetic3D, ScrambleText, ScrollKineticLead, SlotRollText } from './KineticText';
+import { EASE } from '../lib/kineticPresets';
 
 // The numbers a recruiter should see in the first five seconds.
 const PROOF = [
@@ -20,196 +13,265 @@ const PROOF = [
   { value: '98%', label: 'ResNet18 val. accuracy' },
 ];
 
-interface HeroProps {
-  active3DMode?: NeuralMode;
-  on3DModeChange?: (mode: NeuralMode) => void;
-}
+const HERO_LINES = [
+  { text: "Hi, I'm Koshal.", accentWord: 'Koshal.', muted: false },
+  { text: 'I build AI that ships.', accentWord: 'ships.', muted: true },
+] as const;
 
-const Hero: React.FC<HeroProps> = ({ active3DMode = 'attention', on3DModeChange }) => {
-  const [displayText, setDisplayText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
+const rise = (delay: number) => ({
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: { delay, duration: 0.8, ease: EASE },
+});
 
-  // Typewriter effect
-  const typewriter = useCallback(() => {
-    const currentWord = SPECIALTIES[currentIndex];
+const proofTilt = (e: React.PointerEvent<HTMLDivElement>) => {
+  if (e.pointerType !== 'mouse') return;
+  const el = e.currentTarget;
+  const r = el.getBoundingClientRect();
+  el.style.setProperty('--py', `${((e.clientX - r.left) / r.width - 0.5) * 9}deg`);
+  el.style.setProperty('--px', `${-((e.clientY - r.top) / r.height - 0.5) * 9}deg`);
+};
 
-    if (!isDeleting) {
-      if (displayText.length < currentWord.length) {
-        setTimeout(() => setDisplayText(currentWord.slice(0, displayText.length + 1)), 60);
-      } else {
-        setTimeout(() => setIsDeleting(true), 2400);
-      }
-    } else {
-      if (displayText.length > 0) {
-        setTimeout(() => setDisplayText(displayText.slice(0, -1)), 35);
-      } else {
-        setIsDeleting(false);
-        setCurrentIndex((prev) => (prev + 1) % SPECIALTIES.length);
-      }
-    }
-  }, [displayText, currentIndex, isDeleting]);
+const proofUntilt = (e: React.PointerEvent<HTMLDivElement>) => {
+  e.currentTarget.style.setProperty('--px', '0deg');
+  e.currentTarget.style.setProperty('--py', '0deg');
+};
 
-  useEffect(() => {
-    const timeout = setTimeout(typewriter, 10);
-    return () => clearTimeout(timeout);
-  }, [typewriter]);
+/**
+ * Headline left, digital twin right. The twin itself is the guide's stage (AIGuide), laid out over
+ * #twin-slot; it flies into the corner as this section scrolls away.
+ */
+const Hero: React.FC = () => {
+  const reduce = useReducedMotion();
+  const { scrollY } = useScroll();
+  // The twin stays put while the page scrolls; its floor light must not slide past him.
+  const stageLight = useTransform(scrollY, [0, 140], [1, 0]);
+  // Desktop: the copy drifts up and dissolves as the twin flies off (phones read it below the portrait).
+  const wide = typeof window !== 'undefined' && window.innerWidth >= 768;
+  const exitY = useTransform(scrollY, [0, 700], [0, wide ? -140 : 0]);
+  const exitOpacity = useTransform(scrollY, [0, 560], [1, wide ? 0 : 1]);
+
+  // Subtle 3D perspective plane tilt for the hero display typography
+  const titleBoxRef = useRef<HTMLDivElement>(null);
+  const rawRx = useMotionValue(0);
+  const rawRy = useMotionValue(0);
+  const titleRx = useSpring(rawRx, { stiffness: 150, damping: 22 });
+  const titleRy = useSpring(rawRy, { stiffness: 150, damping: 22 });
+
+  let runningCharIdx = 0;
 
   return (
-    <section id="hero" className="relative min-h-[92vh] flex flex-col items-center justify-center px-4 pt-28 pb-16 overflow-hidden">
-      {/* Centered Clean Container */}
-      <div className="relative z-10 text-center max-w-4xl mx-auto flex flex-col items-center justify-center">
-        {/* Eyebrow badge with live system status */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-6 px-4 py-1.5 rounded-full glass-panel border border-slate-500/25 flex items-center gap-2.5 shadow-[0_0_20px_rgba(203,213,225,0.08)]"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]" />
-          <p className="font-mono text-xs md:text-sm tracking-widest text-slate-200 uppercase">
-            AI Engineer · Bengaluru, India
-          </p>
-        </motion.div>
-
-        {/* Clean, Elegant Name (Refined Size & Typography) */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.7 }}
-          className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-slate-100 mb-4"
-        >
-          Koshal Kumar
-        </motion.h1>
-
-        {/* Dynamic Subtitle — Crisp Typewriter */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="font-body text-lg sm:text-xl md:text-2xl text-slate-300 mb-5 h-9 flex items-center justify-center"
-        >
-          <span className="text-slate-400 font-light">Architecting </span>
-          <span className="text-slate-300 font-medium ml-2 font-mono">{displayText}</span>
-          <motion.span
-            animate={{ opacity: [1, 0] }}
-            transition={{ repeat: Infinity, duration: 0.8, ease: 'steps(1)' }}
-            className="inline-block w-[2px] h-[1.2em] ml-1 rounded-sm bg-slate-400 shadow-[0_0_6px_#CBD5E1]"
-          />
-        </motion.div>
-
-        {/* Professional Summary snippet */}
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.6 }}
-          className="max-w-2xl text-slate-300 font-body text-sm sm:text-base leading-relaxed mb-8"
-        >
-          Designing and deploying production LLM architectures — LangGraph multi-agent DAGs,
-          schema-aware NL-to-SQL pipelines, hybrid vector search (FAISS/Pinecone), and AST security guardrails.
-        </motion.p>
-
-        {/* Interactive 3D Mode Selector Pills in Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="flex flex-wrap items-center justify-center gap-2 mb-10"
-        >
-          <span className="font-mono text-[11px] text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5 text-slate-400" /> 3D Viewport:
+    <section
+      id="hero"
+      className="relative mx-auto flex min-h-[100svh] max-w-[1240px] flex-col-reverse justify-center gap-2 px-5 pb-16 pt-24 md:grid md:grid-cols-12 md:items-center md:gap-8 md:px-8 md:pb-20 md:pt-28"
+    >
+      <motion.div style={{ y: exitY, opacity: exitOpacity }} className="relative z-10 md:col-span-7">
+        <motion.span {...rise(0.05)} className="eyebrow backdrop-blur-sm">
+          <span className="relative flex h-2 w-2 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
+            <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
           </span>
-          <button
-            onClick={() => on3DModeChange?.('attention')}
-            className={`px-3.5 py-1.5 rounded-full font-mono text-xs transition-all cursor-pointer border ${
-              active3DMode === 'attention'
-                ? 'bg-slate-500/20 border-slate-400/60 text-slate-200 shadow-[0_0_12px_rgba(203,213,225,0.25)] font-semibold'
-                : 'bg-[#0c1017]/70 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20'
-            }`}
-          >
-            Attention Core
-          </button>
-          <button
-            onClick={() => on3DModeChange?.('langgraph')}
-            className={`px-3.5 py-1.5 rounded-full font-mono text-xs transition-all cursor-pointer border ${
-              active3DMode === 'langgraph'
-                ? 'bg-slate-500/20 border-slate-400/60 text-slate-200 shadow-[0_0_12px_rgba(203,213,225,0.25)] font-semibold'
-                : 'bg-[#0c1017]/70 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20'
-            }`}
-          >
-            LangGraph DAG
-          </button>
-          <button
-            onClick={() => on3DModeChange?.('latent')}
-            className={`px-3.5 py-1.5 rounded-full font-mono text-xs transition-all cursor-pointer border ${
-              active3DMode === 'latent'
-                ? 'bg-slate-500/20 border-slate-400/60 text-slate-200 shadow-[0_0_12px_rgba(203,213,225,0.25)] font-semibold'
-                : 'bg-[#0c1017]/70 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20'
-            }`}
-          >
-            Latent Vector Space
-          </button>
-        </motion.div>
+          <ScrambleText text="AI Engineer · Bengaluru · Open to roles" durationMs={760} retriggerOnHover />
+        </motion.span>
 
-        {/* CTA Buttons */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 0.75, duration: 0.6 }}
-          className="flex flex-wrap items-center justify-center gap-4"
+        {/* 3D Prism Kinetic Hero Typography with Cursor-Reactive Plane & Per-Letter Physics */}
+        <div
+          ref={titleBoxRef}
+          className="mt-6 [perspective:1200px]"
+          onPointerMove={
+            reduce
+              ? undefined
+              : (e) => {
+                  if (e.pointerType !== 'mouse' || !titleBoxRef.current) return;
+                  const r = titleBoxRef.current.getBoundingClientRect();
+                  const nx = (e.clientX - r.left) / r.width - 0.5;
+                  const ny = (e.clientY - r.top) / r.height - 0.5;
+                  rawRy.set(nx * 6.5);
+                  rawRx.set(-ny * 5.5);
+                }
+          }
+          onPointerLeave={
+            reduce
+              ? undefined
+              : () => {
+                  rawRx.set(0);
+                  rawRy.set(0);
+                }
+          }
         >
-          <a
-            href="#ai-sandbox"
-            className="group relative inline-flex items-center justify-center gap-2.5 px-7 py-3.5 font-mono text-xs uppercase tracking-widest text-slate-100 rounded-full overflow-hidden glow-button cursor-pointer"
-          >
-            <div className="absolute inset-[2px] bg-[#0c1017] rounded-full z-0 group-hover:bg-white/5 transition-colors duration-500" />
-            <Sparkles className="relative z-10 w-4 h-4 text-slate-400" />
-            <span className="relative z-10 font-bold">Try Interactive AI Lab</span>
-            <ChevronDown className="relative z-10 w-4 h-4 group-hover:translate-y-0.5 transition-transform text-slate-300" />
-          </a>
+          <motion.div style={reduce ? undefined : { rotateX: titleRx, rotateY: titleRy, transformStyle: 'preserve-3d' }}>
+            <h1
+              aria-label="Hi, I'm Koshal. I build AI that ships."
+              className="text-extrude-gold font-display text-[46px] font-medium leading-[0.98] tracking-display text-slate-100 sm:text-[60px] lg:text-[76px]"
+            >
+              {reduce ? (
+                <>
+                  <span className="block">
+                    Hi, I'm <span className="text-shader-gold">Koshal.</span>
+                  </span>
+                  <span className="block text-slate-300">
+                    I build AI that <span className="text-shader-prism">ships.</span>
+                  </span>
+                </>
+              ) : (
+                HERO_LINES.map((line, lineIdx) => {
+                  const words = line.text.split(' ');
+                  return (
+                    <span
+                      key={line.text}
+                      aria-hidden="true"
+                      className={`block pb-[0.07em] [transform-style:preserve-3d] ${line.muted ? 'text-slate-300/90' : ''}`}
+                    >
+                      {words.map((word, wIdx) => {
+                        const isHighlight = word === line.accentWord;
+                        const chars = Array.from(word);
+                        return (
+                          <React.Fragment key={`${lineIdx}-${wIdx}`}>
+                            <span className="inline-flex whitespace-nowrap align-bottom [transform-style:preserve-3d]">
+                              {chars.map((ch, cIdx) => {
+                                const idx = runningCharIdx++;
+                                return (
+                                  <motion.span
+                                    key={cIdx}
+                                    className={`kinetic-glyph inline-block origin-bottom will-change-transform ${
+                                      isHighlight ? (lineIdx === 0 ? 'text-shader-gold' : 'text-shader-prism') : ''
+                                    }`}
+                                    style={isHighlight ? { animationDelay: `${-(idx * 0.15)}s` } : undefined}
+                                    initial={{
+                                      y: '110%',
+                                      rotateX: -72,
+                                      z: -55,
+                                      opacity: 0,
+                                      filter: 'blur(8px)',
+                                    }}
+                                    animate={{
+                                      y: '0%',
+                                      rotateX: 0,
+                                      z: 0,
+                                      opacity: 1,
+                                      filter: 'blur(0px)',
+                                    }}
+                                    transition={{
+                                      delay: 0.1 + idx * 0.022,
+                                      duration: 0.85,
+                                      ease: EASE,
+                                    }}
+                                    whileHover={{
+                                      y: -6,
+                                      scale: 1.08,
+                                      transition: { type: 'spring', stiffness: 420, damping: 16 },
+                                    }}
+                                  >
+                                    {ch}
+                                  </motion.span>
+                                );
+                              })}
+                            </span>
+                            {wIdx < words.length - 1 ? ' ' : ''}
+                          </React.Fragment>
+                        );
+                      })}
+                    </span>
+                  );
+                })
+              )}
+            </h1>
+          </motion.div>
+        </div>
 
-          <a
-            href="#experience"
-            className="inline-flex items-center justify-center gap-2 px-7 py-3.5 font-mono text-xs uppercase tracking-widest text-slate-200 hover:text-white rounded-full border border-white/10 hover:border-slate-400/50 glass-liquid transition-all duration-300 cursor-pointer"
-          >
-            <span>Production Experience</span>
-            <ArrowRight className="w-4 h-4" />
-          </a>
+        <ScrollKineticLead
+          inView
+          delay={0.34}
+          className="mt-6 max-w-[34rem] text-[16px] leading-relaxed text-slate-300 md:text-[17px]"
+        >
+          Production LLM systems end to end: LangGraph multi-agent platforms, enterprise RAG, schema-aware NL-to-SQL, and the guardrails that keep them safe in front of real users.
+        </ScrollKineticLead>
+
+        <motion.div {...rise(0.45)} className="mt-8 flex flex-wrap items-center gap-3">
+          <Magnetic3D strength={0.22} tilt={6}>
+            <button
+              type="button"
+              onClick={startTour}
+              className="slot-roll-trigger btn btn-primary group relative overflow-hidden"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/35 to-transparent transition-transform duration-700 ease-soft group-hover:translate-x-full"
+              />
+              <AudioLines className="h-4 w-4" />
+              <SlotRollText text="Take the guided tour" accentClassName="text-deep" />
+            </button>
+          </Magnetic3D>
+          <Magnetic3D strength={0.22} tilt={6}>
+            <a href="#ai-sandbox" className="slot-roll-trigger btn btn-ghost group">
+              <SlotRollText text="Explore the live AI lab" accentClassName="text-accent-200" />
+              <ArrowDownRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:translate-y-0.5 group-hover:text-accent-300" />
+            </a>
+          </Magnetic3D>
         </motion.div>
 
-        {/* Proof strip — measured outcomes, not adjectives */}
         <motion.dl
+          {...rise(0.55)}
           data-guide="proof"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.6 }}
-          className="mt-12 w-full max-w-3xl grid grid-cols-2 md:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-white/[0.08] bg-[#1a1f29]"
+          className="mt-12 grid max-w-[40rem] grid-cols-2 gap-px overflow-hidden rounded-[20px] border border-white/15 bg-white/10 shadow-[0_24px_50px_-30px_rgba(6,8,16,0.8)] sm:grid-cols-4 md:grid-cols-2 xl:grid-cols-4"
         >
-          {PROOF.map((p) => (
-            <div key={p.label} className="px-4 py-4 flex flex-col-reverse items-center gap-1 bg-[#080b12]/85 backdrop-blur-md">
-              <dt className="font-mono text-[10px] uppercase tracking-wider text-slate-400 text-center">{p.label}</dt>
-              <dd className="font-display text-xl sm:text-2xl font-bold text-gradient-soft tabular-nums whitespace-nowrap">
+          {PROOF.map((p, idx) => (
+            <motion.div
+              key={p.label}
+              initial={reduce ? undefined : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.56 + idx * 0.06, duration: 0.55, ease: EASE }}
+              onPointerMove={reduce ? undefined : proofTilt}
+              onPointerLeave={proofUntilt}
+              style={
+                reduce
+                  ? undefined
+                  : {
+                      transform: 'perspective(650px) rotateX(var(--px, 0deg)) rotateY(var(--py, 0deg))',
+                      transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1)',
+                    }
+              }
+              className="spotlight flex flex-col-reverse justify-between gap-1.5 bg-canvas/85 px-4 py-4"
+            >
+              <dt className="font-mono text-[10px] uppercase leading-snug tracking-[0.12em] text-slate-400">
+                {p.label}
+              </dt>
+              <dd className="text-shader-gold whitespace-nowrap text-[22px] font-medium tabular-nums tracking-tight md:text-[24px]">
                 {p.value}
               </dd>
-            </div>
+            </motion.div>
           ))}
         </motion.dl>
 
         <motion.button
+          {...rise(0.65)}
           type="button"
           onClick={openPalette}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.1, duration: 0.6 }}
-          className="mt-6 inline-flex items-center gap-2 font-mono text-[11px] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+          className="mt-6 inline-flex cursor-pointer items-center gap-2 font-mono text-[11px] text-slate-400 transition-colors hover:text-slate-100"
         >
-          <Search className="w-3.5 h-3.5" />
+          <Search className="h-3.5 w-3.5 text-accent-300/80" />
           <span className="hidden md:inline">
-            Press <kbd className="px-1.5 py-0.5 rounded border border-white/15 text-slate-300">/</kbd> to semantically search my
-            experience
+            Press <kbd className="rounded border border-white/20 bg-white/[0.04] px-1.5 py-0.5 text-slate-200">/</kbd> to semantically search my experience
           </span>
           <span className="md:hidden">Tap to semantically search my experience</span>
         </motion.button>
+      </motion.div>
+
+      {/* The twin stands here: a warm light pool and a floor glow, the 3D stage is laid over it. */}
+      <div className="relative w-full md:col-span-5">
+        <motion.div
+          id="twin-slot"
+          aria-hidden="true"
+          style={{ opacity: stageLight }}
+          className="relative mx-auto h-[44svh] min-h-[300px] w-full max-w-[440px] md:h-[min(78svh,720px)] md:max-w-none"
+        >
+          <div className="absolute inset-x-[8%] bottom-[18%] top-[6%] rounded-full bg-[radial-gradient(closest-side,rgba(244,182,120,0.22),rgba(244,182,120,0.06)_55%,transparent)] blur-2xl" />
+          <div className="absolute inset-x-[18%] bottom-[10%] h-10 rounded-[50%] bg-[radial-gradient(closest-side,rgba(10,12,20,0.45),transparent)]" />
+          <span className="absolute bottom-[3%] left-1/2 hidden -translate-x-1/2 items-center gap-2 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.16em] text-slate-400 md:inline-flex">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-400" />
+            <ScrambleText text="Digital twin · rendered live · tap to talk" durationMs={900} />
+          </span>
+        </motion.div>
       </div>
     </section>
   );

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight, Copy, CornerDownLeft, Github, Hash, Linkedin, Mail, ScanSearch, Search, Sparkles } from 'lucide-react';
 import { getIndex } from '../data/knowledge';
 import { askLab, PALETTE_EVENT } from '../lib/askLab';
+import { travelTo } from '../lib/smoothScroll';
 
 type Group = 'Ask the AI Lab' | 'Semantic matches' | 'Navigate' | 'Actions';
 
@@ -28,7 +29,7 @@ const SECTIONS: [string, string][] = [
   ['Contact', '#contact'],
 ];
 
-const go = (href: string) => document.querySelector(href)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+const go = (href: string) => travelTo(href);
 
 const isTyping = (el: EventTarget | null) =>
   el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
@@ -104,7 +105,7 @@ const CommandPalette: React.FC = () => {
           group: 'Semantic matches',
           label: h.chunk.title,
           hint: `${h.chunk.meta ?? h.chunk.section} · ${h.score.toFixed(2)}`,
-          icon: <ScanSearch className="w-4 h-4 text-sky-300" />,
+          icon: <ScanSearch className="w-4 h-4 text-accent-300" />,
           run: () => {
             close();
             go(h.chunk.href);
@@ -201,7 +202,8 @@ const CommandPalette: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[90] flex items-start justify-center px-4 pt-[12vh] bg-black/60 backdrop-blur-sm"
+          data-lenis-prevent
+          className="fixed inset-0 z-[90] flex items-start justify-center px-4 pt-[12vh] bg-deep/60 backdrop-blur-sm"
           onMouseDown={(e) => e.target === e.currentTarget && close()}
         >
           <motion.div
@@ -212,7 +214,7 @@ const CommandPalette: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-xl rounded-2xl bg-[#0a0e16]/95 border border-white/10 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9),0_0_40px_rgba(56,189,248,0.08)] overflow-hidden"
+            className="w-full max-w-xl rounded-[20px] bg-raised/90 backdrop-blur-2xl backdrop-saturate-150 border border-white/15 shadow-[0_40px_90px_-30px_rgba(10,12,20,0.85)] overflow-hidden"
           >
             <div className="flex items-center gap-3 px-4 border-b border-white/[0.07]">
               <Search className="w-4 h-4 text-slate-500 shrink-0" />

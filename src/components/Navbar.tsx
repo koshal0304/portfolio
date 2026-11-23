@@ -1,80 +1,80 @@
-import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Search } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+} from 'framer-motion';
+import { ArrowUpRight, Search, Sparkles } from 'lucide-react';
 import { useActiveSection } from '../utils/useActiveSection';
 import { openPalette } from '../lib/askLab';
-import SafeBoundary from './SafeBoundary';
+import { travelTo } from '../lib/smoothScroll';
+import { Magnetic3D, ScrambleText, SlotRollText } from './KineticText';
+import { EASE } from '../lib/kineticPresets';
 
-// three.js stays out of the critical bundle; the badge streams in with the 3D chunk.
-const NavHologram3D = lazy(() => import('./NavHologram3D'));
-const hologram = (
-  <SafeBoundary>
-    <Suspense fallback={<div className="w-10 h-10" />}>
-      <NavHologram3D />
-    </Suspense>
-  </SafeBoundary>
-);
 const MOD_KEY = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl ';
 
 const NAV_LINKS = [
-  { label: 'About', href: '#hero' },
-  { label: 'AI Lab', href: '#ai-sandbox' },
-  { label: 'Experience', href: '#experience' },
-  { label: 'Skills', href: '#skills' },
-  { label: 'Projects', href: '#projects' },
-  { label: 'Education', href: '#education' },
-  { label: 'Contact', href: '#contact' },
-];
+  { num: '01', label: 'About', href: '#hero', mood: '#f4b678' },
+  { num: '02', label: 'AI Lab', href: '#ai-sandbox', mood: '#a5b4fc' },
+  { num: '03', label: 'Experience', href: '#experience', mood: '#f8c690' },
+  { num: '04', label: 'Skills', href: '#skills', mood: '#7ee0c0' },
+  { num: '05', label: 'Projects', href: '#projects', mood: '#f5a3b7' },
+  { num: '06', label: 'Education', href: '#education', mood: '#bcd3ff' },
+  { num: '07', label: 'Contact', href: '#contact', mood: '#f7a072' },
+] as const;
+
+type ScrollMode = 'top' | 'up' | 'down';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [isNavHovered, setIsNavHovered] = useState(false);
+  const [scrollMode, setScrollMode] = useState<ScrollMode>('top');
+  const [scrollPct, setScrollPct] = useState(0);
+  const [booted, setBooted] = useState(false);
+
   const activeSection = useActiveSection();
+  const reduce = useReducedMotion();
+  const navRef = useRef<HTMLElement>(null);
+  const lastY = useRef(0);
 
-  // 3D Parallax & Tilt physics for Navbar Capsule
-  const navRef = useRef<HTMLDivElement>(null);
-  const mouseX = useMotionValue(0.5);
-  const mouseY = useMotionValue(0.5);
+  const { scrollY, scrollYProgress } = useScroll();
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 180, damping: 28, mass: 0.35 });
 
-  // Smooth springs for 3D rotation angles
-  const springConfig = { damping: 20, stiffness: 260, mass: 0.5 };
-  const smoothMouseX = useSpring(mouseX, springConfig);
-  const smoothMouseY = useSpring(mouseY, springConfig);
+  // 3D perspective tilt springs for the floating glass chassis
+  const rawRx = useMotionValue(0);
+  const rawRy = useMotionValue(0);
+  const tiltX = useSpring(rawRx, { stiffness: 200, damping: 24, mass: 0.5 });
+  const tiltY = useSpring(rawRy, { stiffness: 200, damping: 24, mass: 0.5 });
 
-  // Tilt degrees based on mouse position relative to capsule center
-  const rotateX = useTransform(smoothMouseY, [0, 1], [7, -7]);
-  const rotateY = useTransform(smoothMouseX, [0, 1], [-9, 9]);
-
-  // Specular lighting reflection coordinates (percent)
-  const glareX = useTransform(smoothMouseX, [0, 1], [0, 100]);
-  const glareY = useTransform(smoothMouseY, [0, 1], [0, 100]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!navRef.current) return;
-    const rect = navRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    mouseX.set(Math.max(0, Math.min(1, x)));
-    mouseY.set(Math.max(0, Math.min(1, y)));
-  };
-
-  const handleMouseLeave = () => {
-    setIsNavHovered(false);
-    // Smoothly settle back to flat center position
-    mouseX.set(0.5);
-    mouseY.set(0.5);
-  };
-
-  const handleMouseEnter = () => {
-    setIsNavHovered(true);
-  };
-
+  // Boot light-sweep completes once on mount
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const id = setTimeout(() => setBooted(true), 1200);
+    return () => clearTimeout(id);
   }, []);
+
+  // Intelligent scroll direction + depth tracker
+  useMotionValueEvent(scrollY, 'change', (latest) => {
+    const prev = lastY.current;
+    const delta = latest - prev;
+    lastY.current = latest;
+
+    if (latest < 48) {
+      setScrollMode((m) => (m === 'top' ? m : 'top'));
+    } else if (delta > 4 && latest > 120) {
+      setScrollMode((m) => (m === 'down' ? m : 'down'));
+    } else if (delta < -3) {
+      setScrollMode((m) => (m === 'up' ? m : 'up'));
+    }
+
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = max > 0 ? Math.min(100, Math.max(0, Math.round((latest / max) * 100))) : 0;
+    setScrollPct((p) => (p === pct ? p : pct));
+  });
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -84,243 +84,437 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
-  const getSectionFromHref = (href: string): string => href.replace('#', '');
+  const activeLink = NAV_LINKS.find((l) => l.href.slice(1) === activeSection) ?? NAV_LINKS[0];
+  const isCompact = scrollMode === 'down' && !isNavHovered && !isMenuOpen;
+  const isScrolled = scrollMode !== 'top';
+
+  const handleNavPointerMove = (e: React.PointerEvent<HTMLElement>) => {
+    if (reduce || e.pointerType !== 'mouse' || !navRef.current) return;
+    const r = navRef.current.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    navRef.current.style.setProperty('--nav-mx', `${x}px`);
+    navRef.current.style.setProperty('--nav-my', `${y}px`);
+    navRef.current.style.setProperty('--nav-hover', '1');
+    const nx = x / r.width - 0.5;
+    const ny = y / r.height - 0.5;
+    rawRy.set(nx * 5.5);
+    rawRx.set(-ny * 6.5);
+  };
+
+  const handleNavPointerLeave = () => {
+    setIsNavHovered(false);
+    setHoveredIdx(null);
+    rawRx.set(0);
+    rawRy.set(0);
+    if (navRef.current) {
+      navRef.current.style.setProperty('--nav-hover', '0.38');
+    }
+  };
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    setIsMenuOpen(false);
+    travelTo(href);
+  };
 
   return (
     <>
-      {/* Floating Profile Logo with 3D Holographic Halo Ring */}
-      <div className="fixed top-5 left-5 z-50">
-        <a
-          href="#hero"
-          aria-label="Home — Koshal Kumar"
-          className="group relative block p-1 transform hover:scale-105 transition-transform duration-300"
-        >
-          {/* Animated 3D Halo Ring */}
-          <div
-            className="absolute -inset-1 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-            style={{
-              background: 'conic-gradient(from 0deg, #38bdf8, #818cf8, #f472b6, #38bdf8)',
-              animation: 'holo-rotate 5s linear infinite',
-              filter: 'blur(3px)',
-            }}
-          />
-          <div className="absolute inset-0 rounded-full bg-[#06080d]" />
-
-          <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-white/20 group-hover:border-sky-400/60 shadow-[0_0_25px_rgba(56,189,248,0.25)] transition-all">
-            <img
-              src="/profile.jpeg"
-              alt="Koshal Kumar"
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            />
-          </div>
-
-          {/* Online green indicator */}
-          <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#06080d] shadow-[0_0_8px_#34d399]" />
-        </a>
-      </div>
-
-      {/* Mobile search — opens the same command palette */}
-      <button
-        type="button"
-        onClick={openPalette}
-        aria-label="Search my experience"
-        className="md:hidden fixed top-5 right-20 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-[#080d1a]/90 backdrop-blur-xl border border-white/15 shadow-[0_4px_25px_rgba(0,0,0,0.5)] text-slate-200"
+      <motion.header
+        initial={reduce ? undefined : { y: -32, opacity: 0, rotateX: -24, scale: 0.95 }}
+        animate={{
+          y: isCompact ? -3 : 0,
+          opacity: 1,
+          rotateX: 0,
+          scale: isCompact ? 0.965 : 1,
+        }}
+        transition={{ duration: 0.65, ease: EASE }}
+        style={{ perspective: 1300 }}
+        className={`fixed inset-x-0 z-50 mx-auto transition-[top,max-width] duration-500 ease-soft ${
+          isCompact
+            ? 'top-2 w-[calc(100%-24px)] max-w-[960px]'
+            : isScrolled
+              ? 'top-3 w-[calc(100%-24px)] max-w-[1010px]'
+              : 'top-3.5 w-[calc(100%-24px)] max-w-[1060px]'
+        }`}
       >
-        <Search className="w-5 h-5" />
-      </button>
-
-      {/* Mobile Menu Button — Floating Top Right */}
-      <div className="md:hidden fixed top-5 right-5 z-50">
-        <button
-          className="relative w-12 h-12 flex flex-col justify-center items-center rounded-full bg-[#080d1a]/90 backdrop-blur-xl border border-white/15 shadow-[0_4px_25px_rgba(0,0,0,0.5)]"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
-        >
-          <motion.span
-            animate={isMenuOpen ? { rotate: 45, y: 0 } : { rotate: 0, y: -4 }}
-            className="block w-5 h-0.5 bg-slate-200 absolute"
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-          />
-          <motion.span
-            animate={isMenuOpen ? { opacity: 0 } : { opacity: 1 }}
-            className="block w-5 h-0.5 bg-slate-200 absolute"
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-          />
-          <motion.span
-            animate={isMenuOpen ? { rotate: -45, y: 0 } : { rotate: 0, y: 4 }}
-            className="block w-5 h-0.5 bg-slate-200 absolute"
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-          />
-        </button>
-      </div>
-
-      {/* Desktop 3D Floating Capsule Navbar */}
-      <header className="hidden md:flex fixed top-5 left-1/2 -translate-x-1/2 z-50 nav-3d-wrapper">
-        <motion.div
-          ref={navRef}
-          onMouseMove={handleMouseMove}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          initial={{ y: -80, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, type: 'spring', bounce: 0.35 }}
+        {/* Ambient mood halo tethered beneath the floating control bar */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-x-6 -bottom-3 -top-1 -z-10 rounded-full opacity-50 blur-2xl transition-all duration-700"
           style={{
-            rotateX,
-            rotateY,
-            transformStyle: 'preserve-3d',
+            background: `radial-gradient(60% 80% at 50% 50%, ${activeLink.mood}26, transparent 72%)`,
           }}
-          className="nav-3d-capsule relative rounded-full p-[1.5px] transition-shadow duration-300"
+        />
+
+        <motion.nav
+          ref={navRef}
+          aria-label="Primary"
+          onPointerEnter={() => setIsNavHovered(true)}
+          onPointerMove={handleNavPointerMove}
+          onPointerLeave={handleNavPointerLeave}
+          style={
+            reduce
+              ? undefined
+              : {
+                  rotateX: tiltX,
+                  rotateY: tiltY,
+                  transformStyle: 'preserve-3d',
+                }
+          }
+          className={`nav-chassis group/nav relative flex items-center justify-between gap-2.5 overflow-hidden rounded-2xl backdrop-blur-2xl backdrop-saturate-150 transition-[padding] duration-500 ease-soft ${
+            isCompact ? 'py-1.5 pl-2.5 pr-2' : 'py-2 pl-3 pr-2.5'
+          }`}
         >
-          {/* Animated 3D Holographic Border Light Beam */}
-          <div className="nav-border-beam" />
+          {/* Cursor-following luminous glass bezel */}
+          <span aria-hidden="true" className="nav-bezel-glow" />
 
-          {/* Deep Multi-Layer Obsidian Glass Capsule Body */}
-          <nav
-            className="relative rounded-full px-3 py-1.5 flex items-center gap-1 bg-[#080d18]/92 backdrop-blur-2xl border border-white/12 shadow-[0_12px_45px_-10px_rgba(0,0,0,0.7),0_0_30px_rgba(56,189,248,0.08)]"
+          {/* Cursor-following interior optical caustic glow */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-500 group-hover/nav:opacity-100"
             style={{
-              transformStyle: 'preserve-3d',
-              boxShadow: isScrolled
-                ? '0 16px 50px -10px rgba(0,0,0,0.85), 0 0 25px rgba(56,189,248,0.15), inset 0 1px 0 rgba(255,255,255,0.1)'
-                : '0 12px 40px -10px rgba(0,0,0,0.6), 0 0 20px rgba(56,189,248,0.08), inset 0 1px 0 rgba(255,255,255,0.08)',
+              background:
+                'radial-gradient(280px circle at var(--nav-mx, 50%) var(--nav-my, 50%), rgba(244, 182, 120, 0.11), rgba(165, 180, 252, 0.05) 45%, transparent 72%)',
             }}
+          />
+
+          {/* Cinematic entrance light sweep across the control bar */}
+          {!booted && !reduce && (
+            <motion.span
+              aria-hidden="true"
+              initial={{ x: '-120%', opacity: 0.9 }}
+              animate={{ x: '260%', opacity: 0 }}
+              transition={{ duration: 1.15, delay: 0.15, ease: EASE }}
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-accent-200/35 to-transparent"
+            />
+          )}
+
+          {/* Brand Emblem with Orbital Telemetry Ring */}
+          <Magnetic3D strength={0.14} tilt={4} className="shrink-0">
+            <a
+              href="#hero"
+              onClick={(e) => handleLinkClick(e, '#hero')}
+              aria-label="Home — Koshal Kumar"
+              className="slot-roll-trigger group/brand relative z-10 flex items-center gap-2.5 rounded-full py-0.5 pr-2"
+            >
+              <span className="relative flex h-8 w-8 items-center justify-center">
+                {/* Orbital reticle ring */}
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 36 36"
+                  className="orbit-ring-spin pointer-events-none absolute -inset-1 h-10 w-10 text-accent-300/45 transition-colors duration-300 group-hover/brand:text-accent-300"
+                >
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="16.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="0.9"
+                    strokeDasharray="18 8 4 8"
+                  />
+                </svg>
+                <img
+                  src="/profile.jpeg"
+                  alt=""
+                  className="relative h-7 w-7 rounded-full border border-white/25 object-cover shadow-[0_0_12px_rgba(244,182,120,0.28)]"
+                />
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-deep bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]"
+                  title="Open to work"
+                />
+              </span>
+              <span className="flex flex-col leading-none">
+                <SlotRollText
+                  text="Koshal Kumar"
+                  className="text-[13.5px] font-medium tracking-tight text-slate-100 whitespace-nowrap"
+                  accentClassName="text-accent-200"
+                />
+                <span className="mt-0.5 hidden items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-slate-400 sm:inline-flex">
+                  <span
+                    className="h-1 w-1 rounded-full transition-colors duration-500"
+                    style={{ backgroundColor: activeLink.mood, boxShadow: `0 0 6px ${activeLink.mood}` }}
+                  />
+                  <ScrambleText
+                    text={isScrolled ? `${activeLink.num} · ${activeLink.label}` : 'AI ENGINEER'}
+                    durationMs={420}
+                  />
+                </span>
+              </span>
+            </a>
+          </Magnetic3D>
+
+          {/* Primary 3D Magnetic Navigation Rail */}
+          <ul
+            className="relative z-10 hidden items-center gap-0.5 lg:flex"
+            onPointerLeave={() => setHoveredIdx(null)}
           >
-            {/* Specular Glare Reflection on Hover */}
-            {isNavHovered && (
-              <motion.div
-                className="absolute inset-0 rounded-full pointer-events-none opacity-40 overflow-hidden"
-                style={{
-                  background: `radial-gradient(circle 120px at ${glareX.get()}% ${glareY.get()}%, rgba(255,255,255,0.25), transparent 70%)`,
-                }}
-              />
-            )}
+            {NAV_LINKS.map((link, idx) => {
+              const isActive = activeSection === link.href.slice(1);
+              const isHovered = hoveredIdx === idx;
+              return (
+                <motion.li
+                  key={link.label}
+                  initial={reduce ? undefined : { opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.08 + idx * 0.04, duration: 0.45, ease: EASE }}
+                  className="relative"
+                  onPointerEnter={() => setHoveredIdx(idx)}
+                >
+                  {/* Hover optical lens that glides fluidly under the cursor */}
+                  {isHovered && !isActive && (
+                    <motion.span
+                      layoutId="nav-hover-lens"
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 rounded-full border border-white/15 bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
+                      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    />
+                  )}
 
-            {/* Embedded 3D Hologram Core with Status */}
-            <div style={{ transform: 'translateZ(26px)' }} className="flex items-center">
-              {hologram}
-              {/* Divider between 3D core & links */}
-              <div className="h-5 w-[1px] bg-white/10 mx-1.5" />
-            </div>
-
-            {/* Navigation Links */}
-            <ul className="flex items-center gap-0.5" style={{ transform: 'translateZ(18px)' }}>
-              {NAV_LINKS.map((link) => {
-                const sectionId = getSectionFromHref(link.href);
-                const isActive = activeSection === sectionId;
-                return (
-                  <li key={link.label} className="relative">
-                    <a
-                      href={link.href}
-                      className={`relative z-10 flex items-center gap-1.5 px-4 py-1.5 font-mono text-[11px] uppercase tracking-wider whitespace-nowrap transition-all duration-200 select-none ${
-                        isActive
-                          ? 'text-white font-semibold'
-                          : 'text-slate-300 hover:text-white hover:scale-105'
-                      }`}
+                  {/* Active morphing glowing capsule */}
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-active-capsule"
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 rounded-full border border-accent-300/35 bg-gradient-to-b from-white/[0.13] to-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_6px_18px_-6px_rgba(244,182,120,0.45)]"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     >
-                      {/* Active indicator cyan dot */}
-                      {isActive && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]" />
-                      )}
-                      <span>{link.label}</span>
-                    </a>
-
-                    {/* Elevated 3D Frosted Glass Active Pill */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="nav-pill-active"
-                        className="absolute inset-0 rounded-full z-0 pointer-events-none"
+                      {/* Top specular glint */}
+                      <span className="absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-accent-200/80 to-transparent" />
+                      {/* Bottom glowing plasma emitter */}
+                      <span
+                        className="absolute -bottom-px left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full"
                         style={{
-                          background:
-                            'linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(129, 140, 248, 0.18) 100%)',
-                          border: '1px solid rgba(56, 189, 248, 0.45)',
-                          boxShadow:
-                            '0 0 20px rgba(56, 189, 248, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-                          backdropFilter: 'blur(12px)',
-                          transform: 'translateZ(12px)',
-                        }}
-                        transition={{
-                          type: 'spring',
-                          stiffness: 420,
-                          damping: 32,
+                          backgroundColor: link.mood,
+                          boxShadow: `0 0 12px 1px ${link.mood}`,
                         }}
                       />
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+                    </motion.span>
+                  )}
+
+                  <Magnetic3D strength={0.16} tilt={5}>
+                    <a
+                      href={link.href}
+                      onClick={(e) => handleLinkClick(e, link.href)}
+                      aria-current={isActive ? 'true' : undefined}
+                      className={`slot-roll-trigger relative z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] whitespace-nowrap transition-colors duration-300 ${
+                        isActive ? 'text-slate-50 font-medium' : 'text-slate-300 hover:text-slate-50'
+                      }`}
+                    >
+                      <span
+                        className={`hidden font-mono text-[9px] tabular-nums transition-all duration-300 xl:inline ${
+                          isActive
+                            ? 'text-accent-300 opacity-100'
+                            : isHovered
+                              ? 'text-accent-300/80 opacity-90'
+                              : 'text-slate-500 opacity-60'
+                        }`}
+                      >
+                        {link.num}
+                      </span>
+                      <SlotRollText
+                        text={link.label}
+                        active={isActive}
+                        accentClassName={isActive ? 'text-accent-200' : 'text-accent-200'}
+                      />
+                    </a>
+                  </Magnetic3D>
+                </motion.li>
+              );
+            })}
+          </ul>
+
+          {/* Right Controls: Live Telemetry + Semantic Search + Luminous CTA */}
+          <div className="relative z-10 flex shrink-0 items-center gap-1.5">
+            {/* Scroll depth HUD badge (desktop, when scrolled) */}
+            <AnimatePresence>
+              {isScrolled && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, width: 'auto', scale: 1 }}
+                  exit={{ opacity: 0, width: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3, ease: EASE }}
+                  aria-hidden="true"
+                  className="hidden overflow-hidden xl:inline-flex"
+                >
+                  <span className="mr-0.5 inline-flex items-center gap-1 rounded-full border border-white/10 bg-deep/55 px-2 py-1 font-mono text-[10px] tabular-nums text-slate-300">
+                    <span className="h-1 w-1 rounded-full bg-accent-400" />
+                    {String(scrollPct).padStart(2, '0')}%
+                  </span>
+                </motion.span>
+              )}
+            </AnimatePresence>
+
+            <Magnetic3D strength={0.18} tilt={6}>
+              <button
+                type="button"
+                onClick={openPalette}
+                aria-label="Search my experience"
+                title="Semantic search across my experience"
+                className="group/search flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.05] px-2.5 text-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-all duration-300 hover:border-accent-300/40 hover:bg-white/[0.1] hover:text-slate-50"
+              >
+                <Search className="h-3.5 w-3.5 transition-transform duration-300 group-hover/search:scale-110 group-hover/search:text-accent-300" />
+                <kbd className="hidden font-mono text-[10px] text-slate-400 transition-colors group-hover/search:text-slate-200 md:inline">
+                  {MOD_KEY}K
+                </kbd>
+              </button>
+            </Magnetic3D>
+
+            <Magnetic3D strength={0.2} tilt={6} className="hidden sm:inline-flex">
+              <a
+                href="#contact"
+                onClick={(e) => handleLinkClick(e, '#contact')}
+                className="slot-roll-trigger btn btn-primary group/cta relative overflow-hidden !px-4 !py-1.5 text-[12.5px]"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/35 to-transparent transition-transform duration-700 ease-soft group-hover/cta:translate-x-full"
+                />
+                <SlotRollText text="Let's talk" accentClassName="text-deep" />
+                <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover/cta:-translate-y-0.5 group-hover/cta:translate-x-0.5" />
+              </a>
+            </Magnetic3D>
 
             <button
               type="button"
-              onClick={openPalette}
-              aria-label="Search (command palette)"
-              title="Semantic search across my experience"
-              style={{ transform: 'translateZ(18px)' }}
-              className="ml-1 flex items-center gap-1.5 pl-2.5 pr-2 py-1 rounded-full border border-white/10 bg-white/[0.03] hover:border-sky-400/40 text-slate-300 hover:text-white transition-colors"
+              className="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/[0.05] transition-colors hover:border-accent-300/40 hover:bg-white/[0.1] lg:hidden"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMenuOpen}
             >
-              <Search className="w-3.5 h-3.5" />
-              <kbd className="font-mono text-[10px] text-slate-400">{MOD_KEY}K</kbd>
+              <motion.span
+                animate={isMenuOpen ? { rotate: 45, y: 0 } : { rotate: 0, y: -3 }}
+                className="absolute block h-px w-3.5 bg-slate-100"
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+              />
+              <motion.span
+                animate={isMenuOpen ? { rotate: -45, y: 0 } : { rotate: 0, y: 3 }}
+                className="absolute block h-px w-3.5 bg-slate-100"
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+              />
             </button>
-          </nav>
-        </motion.div>
-      </header>
+          </div>
 
-      {/* Mobile Fullscreen Cyberpunk Overlay */}
+          {/* Live Scroll-Progress Plasma Filament along bottom edge */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-4 bottom-0 h-[1.5px] overflow-hidden rounded-full bg-white/[0.06]">
+            <motion.div
+              style={{
+                scaleX: smoothProgress,
+                background: `linear-gradient(90deg, rgba(244,182,120,0.25), ${activeLink.mood}, #ffffff)`,
+                boxShadow: `0 0 10px ${activeLink.mood}`,
+              }}
+              className="h-full w-full origin-left"
+            />
+          </div>
+        </motion.nav>
+      </motion.header>
+
+      {/* Futuristic 3D Mobile Command Overlay */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            animate={{ opacity: 1, backdropFilter: 'blur(40px)' }}
-            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            transition={{ duration: 0.35 }}
-            className="md:hidden fixed inset-0 bg-[#06080d]/95 z-40 flex flex-col items-center justify-center px-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: EASE }}
+            className="fixed inset-0 z-40 flex flex-col justify-center overflow-hidden bg-deep/92 px-7 backdrop-blur-2xl lg:hidden"
           >
-            {/* Ambient Background Glows */}
-            <div className="absolute w-72 h-72 rounded-full bg-sky-500/10 blur-[90px] pointer-events-none" />
-            <div className="absolute w-72 h-72 rounded-full bg-purple-500/10 blur-[90px] pointer-events-none bottom-10" />
+            {/* Subtle holographic architectural grid */}
+            <div aria-hidden="true" className="lab-chamber-grid pointer-events-none absolute inset-0 opacity-60" />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-24 top-1/4 h-72 w-72 rounded-full blur-3xl"
+              style={{ background: `${activeLink.mood}22` }}
+            />
 
-            {/* Mobile 3D Hologram Badge */}
-            <div className="mb-8 flex items-center justify-center scale-125">
-              {hologram}
-            </div>
+            <div className="relative z-10 mx-auto w-full max-w-md [perspective:900px]">
+              <motion.p
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: EASE }}
+                className="mb-6 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-accent-300"
+              >
+                <Sparkles className="h-3 w-3" />
+                Navigation Matrix · {String(scrollPct).padStart(2, '0')}% Depth
+              </motion.p>
 
-            <nav className="w-full max-w-xs">
-              <ul className="flex flex-col items-stretch space-y-4">
-                {NAV_LINKS.map((link, i) => {
-                  const sectionId = getSectionFromHref(link.href);
-                  const isActive = activeSection === sectionId;
-                  return (
-                    <motion.li
-                      key={link.label}
-                      initial={{ opacity: 0, y: 25 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 15 }}
-                      transition={{ delay: i * 0.06, type: 'spring', bounce: 0.3 }}
-                    >
-                      <a
-                        href={link.href}
-                        onClick={() => setIsMenuOpen(false)}
-                        className={`group flex items-center justify-between px-5 py-3 rounded-2xl border transition-all duration-300 ${
-                          isActive
-                            ? 'bg-sky-500/15 border-sky-400/50 text-white font-semibold shadow-[0_0_20px_rgba(56,189,248,0.2)]'
-                            : 'bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:border-white/15'
-                        }`}
+              <nav aria-label="Mobile">
+                <ul className="flex flex-col gap-2">
+                  {NAV_LINKS.map((link, i) => {
+                    const isActive = activeSection === link.href.slice(1);
+                    return (
+                      <motion.li
+                        key={link.label}
+                        initial={reduce ? { opacity: 0 } : { opacity: 0, x: -24, rotateX: -35 }}
+                        animate={{ opacity: 1, x: 0, rotateX: 0 }}
+                        exit={{ opacity: 0, x: -12 }}
+                        transition={{ delay: i * 0.045, duration: 0.48, ease: EASE }}
                       >
-                        <span className="font-display text-xl uppercase tracking-wider">
-                          {link.label}
-                        </span>
-                        {isActive ? (
-                          <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]" />
-                        ) : (
-                          <span className="text-slate-600 font-mono text-xs group-hover:text-slate-400">
-                            0{i + 1}
+                        <a
+                          href={link.href}
+                          onClick={(e) => handleLinkClick(e, link.href)}
+                          className={`group flex items-center justify-between rounded-2xl border px-4 py-3 transition-all duration-300 ${
+                            isActive
+                              ? 'border-accent-300/35 bg-white/[0.08] shadow-[0_12px_30px_-14px_rgba(244,182,120,0.45)]'
+                              : 'border-white/[0.06] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.05]'
+                          }`}
+                        >
+                          <span className="flex items-baseline gap-4">
+                            <span
+                              className="font-mono text-[11px] tabular-nums"
+                              style={{ color: isActive ? link.mood : undefined }}
+                            >
+                              [{link.num}]
+                            </span>
+                            <span
+                              className={`font-display text-[26px] font-medium tracking-display transition-colors ${
+                                isActive ? 'text-shader-gold' : 'text-slate-100 group-hover:text-accent-200'
+                              }`}
+                            >
+                              {link.label}
+                            </span>
                           </span>
-                        )}
-                      </a>
-                    </motion.li>
-                  );
-                })}
-              </ul>
-            </nav>
+                          <ArrowUpRight
+                            className={`h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 ${
+                              isActive ? 'text-accent-300' : 'text-slate-500 group-hover:text-slate-200'
+                            }`}
+                          />
+                        </a>
+                      </motion.li>
+                    );
+                  })}
+                </ul>
+              </nav>
+
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.34, duration: 0.45, ease: EASE }}
+                className="mt-6 flex items-center gap-2.5"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    openPalette();
+                  }}
+                  className="btn btn-ghost flex-1 !py-2.5 text-[13px]"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  Semantic search
+                </button>
+                <a
+                  href="#contact"
+                  onClick={(e) => handleLinkClick(e, '#contact')}
+                  className="btn btn-primary flex-1 !py-2.5 text-[13px]"
+                >
+                  Let's talk
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </a>
+              </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

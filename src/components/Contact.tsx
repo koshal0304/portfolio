@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import SectionHeader from './SectionHeader';
+import VelocityMarquee from './contact/VelocityMarquee';
+import { reactTwin } from '../lib/askLab';
+import { Magnetic3D, SlotRollText } from './KineticText';
 
 interface FormData {
   name: string;
@@ -7,60 +12,45 @@ interface FormData {
   message: string;
 }
 
-interface FormErrors {
-  name?: string;
-  email?: string;
-  message?: string;
-}
+type FormErrors = Partial<Record<keyof FormData, string>>;
+
+const EASE = [0.22, 1, 0.36, 1] as const;
+const EMAIL = 'koshalkumar0304@gmail.com';
 
 const CONTACT_LINKS = [
   {
     label: 'Email',
+    value: 'koshalkumar0304@gmail.com',
     href: 'mailto:koshalkumar0304@gmail.com',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect width="20" height="16" x="2" y="4" rx="2" />
-        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-      </svg>
-    ),
   },
   {
     label: 'LinkedIn',
+    value: 'Koshal Kumar',
     href: 'https://linkedin.com/in/koshal-kumar-970233240',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-        <rect width="4" height="12" x="2" y="9" />
-        <circle cx="4" cy="4" r="2" />
-      </svg>
-    ),
   },
   {
     label: 'Phone',
+    value: '+91 82188 06349',
     href: 'tel:+918218806349',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-      </svg>
-    ),
   },
   {
     label: 'GitHub',
+    value: 'github.com/koshal0304',
     href: 'https://github.com/koshal0304',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
-        <path d="M9 18c-4.51 2-5-2-7-2" />
-      </svg>
-    ),
   },
+];
+
+// Caps keep the prefilled mailto inside what mail clients accept.
+const FIELDS: { name: keyof FormData; label: string; type?: string; max: number }[] = [
+  { name: 'name', label: 'Name', max: 100 },
+  { name: 'email', label: 'Email', type: 'email', max: 254 },
+  { name: 'message', label: 'Message', max: 1800 },
 ];
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({ name: '', email: '', message: '' });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -83,222 +73,146 @@ const Contact: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    // No backend: hand the message to the visitor's own mail app, fully URI-encoded (no header injection).
+    const subject = encodeURIComponent(`Portfolio enquiry from ${formData.name.trim()}`);
+    const body = encodeURIComponent(`${formData.message.trim()}\n\n— ${formData.name.trim()} (${formData.email.trim()})`);
+    window.location.href = `mailto:${EMAIL}?subject=${subject}&body=${body}`;
     setIsSubmitted(true);
+    reactTwin('celebrate');
   };
 
   return (
-    <section id="contact" className="bg-background/70 py-24 relative overflow-hidden">
-      {/* Aurora background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div
-          className="float-orb"
-          style={{
-            width: '400px',
-            height: '400px',
-            background: 'var(--aurora-1)',
-            top: '30%',
-            right: '-5%',
-            opacity: 0.04,
-          }}
+    <section id="contact" className="relative py-24 md:py-32">
+      <div className="mx-auto max-w-[1100px] px-5">
+        <SectionHeader
+          chapter="08"
+          eyebrow="Contact"
+          title="Let's build something real."
+          lead="Based in Bengaluru, India · Open to AI/ML engineering roles, production LLM systems & collaborations."
         />
-      </div>
 
-      <div className="container mx-auto px-4 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center mb-16"
-        >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-slate-100 mb-4 tracking-tight">
-            Let's Build Something
-          </h2>
-          <p className="text-slate-400 font-body text-base max-w-xl mx-auto">
-            Based in Bengaluru, India · Open to AI/ML engineering roles, production LLM systems & collaborations.
-          </p>
-          <motion.div
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="aurora-divider mx-auto mt-6"
-            style={{ maxWidth: '100px', transformOrigin: 'center' }}
-          />
-        </motion.div>
+        <div className="grid gap-5 md:grid-cols-[1fr_1.15fr] items-start">
+          {/* Direct lines */}
+          <motion.ul
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.7, ease: EASE }}
+            className="card rounded-[20px] divide-y divide-white/10 overflow-hidden"
+          >
+            {CONTACT_LINKS.map((link) => (
+              <li key={link.label}>
+                <a
+                  href={link.href}
+                  target={link.href.startsWith('http') ? '_blank' : undefined}
+                  rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  aria-label={link.label}
+                  data-cursor="Open"
+                  className="slot-roll-trigger group flex cursor-pointer items-center justify-between gap-4 px-6 py-5 transition-colors hover:bg-white/[0.04]"
+                >
+                  <span className="min-w-0">
+                    <span className="block font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">{link.label}</span>
+                    <span className="mt-1 block truncate text-[15px] text-slate-100">
+                      <SlotRollText text={link.value} accentClassName="text-accent-300" />
+                    </span>
+                  </span>
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-400 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent-300" />
+                </a>
+              </li>
+            ))}
+          </motion.ul>
 
-        {/* Icon links with neon hover */}
-        <div className="flex justify-center gap-6 md:gap-10 mb-16">
-          {CONTACT_LINKS.map((link, i) => (
-            <motion.a
-              key={link.label}
-              href={link.href}
-              target={link.href.startsWith('http') ? '_blank' : undefined}
-              rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1, duration: 0.6 }}
-              whileHover={{ scale: 1.05, y: -4 }}
-              data-cursor-text="Open"
-              className="flex flex-col items-center gap-2 text-slate-400 hover:text-slate-200 transition-all duration-300 cursor-pointer group"
-              aria-label={link.label}
-            >
-              <div
-                className="p-3.5 rounded-xl glass-liquid border border-white/[0.08] group-hover:border-sky-400/40 group-hover:shadow-[0_0_20px_rgba(56,189,248,0.25)] text-slate-300 group-hover:text-sky-300 transition-all duration-300"
-              >
-                {link.icon}
-              </div>
-              <span className="font-mono text-xs text-slate-400 group-hover:text-slate-200 transition-colors">{link.label}</span>
-            </motion.a>
-          ))}
-        </div>
-
-        {/* Form with neon focus states */}
-        <div className="max-w-lg mx-auto">
           <AnimatePresence mode="wait">
             {isSubmitted ? (
               <motion.div
                 key="success"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                className="text-center py-16 glass-liquid rounded-2xl p-8 border border-white/[0.08]"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: EASE }}
+                className="card rounded-[20px] p-10 text-center"
               >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: 'spring', bounce: 0.5 }}
-                >
-                  <svg
-                    className="w-16 h-16 mx-auto mb-4 text-sky-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeLinecap="round" />
-                    <polyline points="22 4 12 14.01 9 11.01" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </motion.div>
-                <h3 className="font-display text-2xl font-bold text-slate-100 mb-2">Message Sent!</h3>
-                <p className="text-slate-300 font-body text-sm">Thank you for reaching out. I'll get back to you soon.</p>
+                <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-accent-300" strokeWidth={1.5} />
+                <h3 className="font-display text-[24px] font-medium tracking-tight text-slate-100 mb-2">
+                  Your email app has the message ready
+                </h3>
+                <p className="text-[15px] text-slate-300">
+                  Hit send there and it comes straight to me. Nothing opened?{' '}
+                  <a href={`mailto:${EMAIL}`} className="text-accent-300 underline-offset-4 hover:underline">
+                    {EMAIL}
+                  </a>
+                </p>
+                <button type="button" onClick={() => setIsSubmitted(false)} className="btn btn-ghost mt-6 !py-2 text-[13px]">
+                  Edit the message
+                </button>
               </motion.div>
             ) : (
               <motion.form
                 key="form"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-80px' }}
+                transition={{ duration: 0.7, delay: 0.08, ease: EASE }}
                 onSubmit={handleSubmit}
+                noValidate
                 data-guide="contact-form"
-                className="space-y-6"
+                className="card rounded-[20px] p-6 md:p-7 space-y-4"
               >
-                {/* Name field with neon focus */}
-                <motion.div
-                  className="relative"
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <input
-                    type="text"
-                    id="contact-name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('name')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder=" "
-                    className={`peer w-full bg-[#07090e]/70 border ${
-                      errors.name ? 'border-red-400/80' : focusedField === 'name' ? 'border-sky-400/60 shadow-[0_0_15px_rgba(56,189,248,0.15)]' : 'border-white/10'
-                    } rounded-xl px-4 pt-6 pb-2 text-slate-100 font-body focus:outline-none transition-all`}
-                  />
-                  <label
-                    htmlFor="contact-name"
-                    className="absolute left-4 top-4 text-slate-400 text-sm transition-all duration-200 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-sky-300 peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-xs"
-                  >
-                    Name
-                  </label>
-                  {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
-                </motion.div>
+                {FIELDS.map((field) => {
+                  const id = `contact-${field.name}`;
+                  const error = errors[field.name];
+                  const cls = `peer w-full rounded-[14px] bg-sunken/60 border ${
+                    error ? 'border-red-400/80' : 'border-white/10 focus:border-accent-400/60'
+                  } px-4 pt-6 pb-2 text-[15px] text-slate-100 focus:outline-none transition-colors`;
+                  return (
+                    <div key={field.name} className="relative">
+                      {field.name === 'message' ? (
+                        <textarea
+                          id={id}
+                          name={field.name}
+                          value={formData[field.name]}
+                          onChange={handleChange}
+                          placeholder=" "
+                          rows={4}
+                          maxLength={field.max}
+                          aria-invalid={!!error}
+                          className={`${cls} resize-none`}
+                        />
+                      ) : (
+                        <input
+                          type={field.type ?? 'text'}
+                          id={id}
+                          name={field.name}
+                          value={formData[field.name]}
+                          onChange={handleChange}
+                          placeholder=" "
+                          maxLength={field.max}
+                          aria-invalid={!!error}
+                          className={cls}
+                        />
+                      )}
+                      <label
+                        htmlFor={id}
+                        className="absolute left-4 top-4 text-[14px] text-slate-400 transition-all duration-200 pointer-events-none peer-focus:top-1.5 peer-focus:text-[11px] peer-focus:text-accent-300 peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-[11px]"
+                      >
+                        {field.label}
+                      </label>
+                      {error && <p className="text-red-300 text-[12px] mt-1.5">{error}</p>}
+                    </div>
+                  );
+                })}
 
-                {/* Email field */}
-                <motion.div
-                  className="relative"
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <input
-                    type="email"
-                    id="contact-email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder=" "
-                    className={`peer w-full bg-[#07090e]/70 border ${
-                      errors.email ? 'border-red-400/80' : focusedField === 'email' ? 'border-sky-400/60 shadow-[0_0_15px_rgba(56,189,248,0.15)]' : 'border-white/10'
-                    } rounded-xl px-4 pt-6 pb-2 text-slate-100 font-body focus:outline-none transition-all`}
-                  />
-                  <label
-                    htmlFor="contact-email"
-                    className="absolute left-4 top-4 text-slate-400 text-sm transition-all duration-200 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-sky-300 peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-xs"
-                  >
-                    Email
-                  </label>
-                  {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
-                </motion.div>
-
-                {/* Message field */}
-                <motion.div
-                  className="relative"
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <textarea
-                    id="contact-message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('message')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder=" "
-                    rows={4}
-                    className={`peer w-full bg-[#07090e]/70 border ${
-                      errors.message ? 'border-red-400/80' : focusedField === 'message' ? 'border-sky-400/60 shadow-[0_0_15px_rgba(56,189,248,0.15)]' : 'border-white/10'
-                    } rounded-xl px-4 pt-6 pb-2 text-slate-100 font-body focus:outline-none transition-all resize-none`}
-                  />
-                  <label
-                    htmlFor="contact-message"
-                    className="absolute left-4 top-4 text-slate-400 text-sm transition-all duration-200 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-sky-300 peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-xs"
-                  >
-                    Message
-                  </label>
-                  {errors.message && <p className="text-red-400 text-xs mt-1">{errors.message}</p>}
-                </motion.div>
-
-                {/* Submit — aurora gradient button */}
-                <motion.button
-                  type="submit"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  data-cursor-text="Send"
-                  className="w-full font-body font-semibold py-3.5 rounded-xl transition-all cursor-pointer relative overflow-hidden group bg-gradient-to-r from-sky-500 to-indigo-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.25)] hover:opacity-95"
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    Send Message
-                  </span>
-                </motion.button>
+                <Magnetic3D strength={0.12} tilt={4} className="w-full">
+                  <button type="submit" data-cursor="Send" className="slot-roll-trigger btn btn-primary w-full !py-3">
+                    <SlotRollText text="Send message" accentClassName="text-deep" />
+                  </button>
+                </Magnetic3D>
               </motion.form>
             )}
           </AnimatePresence>
+        </div>
+
+        <div className="mt-20 md:mt-28">
+          <VelocityMarquee />
         </div>
       </div>
     </section>

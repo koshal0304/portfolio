@@ -78,7 +78,7 @@ const HoloAvatar: React.FC<HoloAvatarProps> = ({ director, reducedMotion }) => {
 
   const { holo, wire, face, beam, glow, uniforms } = useMemo(() => {
     const uniforms = {
-      uColor: { value: new THREE.Color('#38bdf8') },
+      uColor: { value: new THREE.Color('#f4b678') },
       uTime: { value: 0 },
       uReveal: { value: reducedMotion ? 10 : FLOOR_Y },
       uFloor: { value: -0.5 },
@@ -99,8 +99,8 @@ const HoloAvatar: React.FC<HoloAvatarProps> = ({ director, reducedMotion }) => {
       uniforms,
       holo: shader(1),
       wire: shader(0.3, true),
-      face: additive('#e0faff', 1),
-      glow: additive('#38bdf8', 0.5),
+      face: additive('#fff4e8', 1),
+      glow: additive('#f4b678', 0.5),
       beam: new THREE.ShaderMaterial({
         uniforms: { uColor: uniforms.uColor, uTime: uniforms.uTime },
         vertexShader: BEAM_VERT,
@@ -231,7 +231,7 @@ const HoloAvatar: React.FC<HoloAvatarProps> = ({ director, reducedMotion }) => {
         <cylinderGeometry args={[0.55, 0.42, 0.95, 32, 1, true]} />
       </mesh>
       <points ref={dust} geometry={dustGeo}>
-        <pointsMaterial color="#7dd3fc" size={0.025} transparent opacity={0.7} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <pointsMaterial color="#fddbb4" size={0.025} transparent opacity={0.7} depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
 
       <group ref={root}>

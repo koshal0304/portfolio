@@ -1,5 +1,8 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
+import SectionHeader from './SectionHeader';
+import BlueprintArm from './education/BlueprintArm';
+import { ExtrudedHeading, ScrambleText } from './KineticText';
 
 interface Certification {
   title: string;
@@ -20,135 +23,123 @@ const certifications: Certification[] = [
   },
 ];
 
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+// Cards swing in from either side of the schematic, like plates being slid onto a drafting table.
+const swing = (side: 1 | -1) => ({
+  initial: { opacity: 0, x: 48 * side, rotateY: -14 * side },
+  whileInView: { opacity: 1, x: 0, rotateY: 0 },
+  viewport: { once: true, margin: '-12% 0px' },
+  transition: { duration: 1, ease: EASE },
+});
+
+// Faint drafting grid (major + minor lines) that fades out toward the edges.
+const BLUEPRINT: React.CSSProperties = {
+  backgroundImage:
+    'linear-gradient(rgba(165,180,252,0.075) 1px, transparent 1px), linear-gradient(90deg, rgba(165,180,252,0.075) 1px, transparent 1px), linear-gradient(rgba(165,180,252,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(165,180,252,0.035) 1px, transparent 1px)',
+  backgroundSize: '120px 120px, 120px 120px, 24px 24px, 24px 24px',
+  maskImage: 'radial-gradient(ellipse 70% 60% at 50% 55%, #000 35%, transparent 80%)',
+  WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 55%, #000 35%, transparent 80%)',
+};
+
 const Education: React.FC = () => {
+  // The schematic leans a few degrees toward the cursor.
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const tiltX = useSpring(rx, { stiffness: 120, damping: 20 });
+  const tiltY = useSpring(ry, { stiffness: 120, damping: 20 });
+  const onPointerMove = (e: React.PointerEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    ry.set(((e.clientX - r.left) / r.width - 0.5) * 16);
+    rx.set(-((e.clientY - r.top) / r.height - 0.5) * 10);
+  };
+  const onPointerLeave = () => {
+    rx.set(0);
+    ry.set(0);
+  };
+
   return (
-    <section id="education" className="bg-surface/70 py-24 relative overflow-hidden">
-      {/* Background aurora orb */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div
-          className="float-orb"
-          style={{
-            width: '350px',
-            height: '350px',
-            background: 'var(--aurora-2)',
-            top: '25%',
-            right: '-8%',
-            opacity: 0.05,
-            animationDelay: '-5s',
-          }}
+    <section id="education" className="relative py-24 md:py-32" onPointerMove={onPointerMove} onPointerLeave={onPointerLeave}>
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={BLUEPRINT} />
+      <div className="mx-auto max-w-[1180px] px-5">
+        <SectionHeader
+          chapter="07"
+          eyebrow="Foundations"
+          title="Robotics first, then AI."
+          lead="An engineering degree in automation and robotics, sharpened with focused ML and data-science training."
         />
-      </div>
 
-      <div className="container mx-auto px-4 max-w-5xl relative z-10">
-        {/* Section Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center mb-16"
+        <div
+          data-guide="education"
+          className="grid grid-cols-1 items-center gap-6 [perspective:1400px] lg:grid-cols-[1fr_minmax(220px,280px)_1fr] lg:gap-8"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-slate-100 mb-4 tracking-tight">
-            Education & Certifications
-          </h2>
-          <p className="text-slate-400 font-body text-base">Academic background & specialized technical training</p>
-          <motion.div
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="aurora-divider mx-auto mt-6"
-            style={{ maxWidth: '100px', transformOrigin: 'center' }}
-          />
-        </motion.div>
+          <div className="[perspective:900px] lg:order-2">
+            <BlueprintArm tiltX={tiltX} tiltY={tiltY} />
+          </div>
 
-        <div data-guide="education" className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Degree Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="glass-liquid holo-card rounded-2xl p-8 relative flex flex-col justify-between border border-white/[0.08] hover:border-white/20 transition-all"
-          >
+          <motion.article {...swing(-1)} className="card spotlight flex flex-col justify-between rounded-[20px] p-7 md:p-8 lg:order-1">
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <span
-                  className="font-mono text-xs px-3 py-1 rounded-full uppercase tracking-wider border border-sky-400/30 text-sky-300 bg-sky-950/30 shadow-[0_0_10px_rgba(56,189,248,0.1)]"
-                >
-                  Degree
+              <div className="mb-6 flex items-center justify-between">
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-accent-300">
+                  <ScrambleText text="Degree" retriggerOnHover durationMs={460} />
                 </span>
-                <span className="font-mono text-xs text-slate-400">2018 – 2022</span>
+                <span className="font-mono text-[11px] text-slate-400">2018 – 2022</span>
               </div>
-
-              <h3 className="font-display text-2xl font-bold text-slate-100 mb-2">
-                B.Tech in Automation & Robotics Engineering
-              </h3>
-              <p className="font-mono text-sm text-sky-300/90 mb-4">
-                Gulzar Group of Institutes, Ludhiana
-              </p>
-              <p className="text-slate-300 font-body text-sm leading-relaxed mb-6">
-                Rigorous grounding in control systems, robotics engineering, embedded hardware,
-                computational algorithms, and autonomous intelligent systems.
+              <ExtrudedHeading
+                text="B.Tech in Automation & Robotics Engineering"
+                as="h3"
+                variant="holo"
+                className="mb-2 font-display text-[24px] font-medium leading-tight tracking-tight text-slate-100 md:text-[28px]"
+              />
+              <p className="mb-4 text-[14px] text-slate-300">Gulzar Group of Institutes, Ludhiana</p>
+              <p className="mb-6 text-[15px] leading-relaxed text-slate-300">
+                Rigorous grounding in control systems, robotics engineering, embedded hardware, computational algorithms,
+                and autonomous intelligent systems.
               </p>
             </div>
 
-            <div className="pt-4 border-t border-white/[0.08] flex flex-wrap gap-2">
-              {['Robotics Engineering', 'Automation Systems', 'Control Theory', 'Computational Logic'].map(
-                (skill) => (
-                  <span
-                    key={skill}
-                    className="font-mono text-[11px] px-2.5 py-1 rounded-full text-slate-300 bg-white/[0.03] border border-white/[0.08]"
-                  >
-                    {skill}
-                  </span>
-                )
-              )}
-            </div>
-          </motion.div>
-
-          {/* Certifications Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="glass-liquid holo-card rounded-2xl p-8 relative flex flex-col justify-between border border-white/[0.08] hover:border-white/20 transition-all"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <span
-                  className="font-mono text-xs px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-400/30 text-indigo-300 bg-indigo-950/30 shadow-[0_0_10px_rgba(129,140,248,0.1)]"
-                >
-                  Verified Credentials
+            <div className="flex flex-wrap gap-1.5 border-t border-white/10 pt-5">
+              {['Robotics Engineering', 'Automation Systems', 'Control Theory', 'Computational Logic'].map((skill) => (
+                <span key={skill} className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] text-slate-300 transition-colors hover:border-indigo-300/40 hover:text-slate-100">
+                  {skill}
                 </span>
-                <span className="font-mono text-xs text-slate-400">Industry Certifications</span>
-              </div>
+              ))}
+            </div>
+          </motion.article>
 
-              <div className="space-y-6">
-                {certifications.map((cert, idx) => (
-                  <div key={idx} className="group">
-                    <div className="flex items-baseline justify-between mb-1">
-                      <h4 className="font-display text-lg font-bold text-slate-100 group-hover:text-sky-300 transition-colors">
-                        {cert.title}
-                      </h4>
-                      <span className="font-mono text-xs text-indigo-300 px-2.5 py-0.5 rounded-full bg-indigo-950/40 border border-indigo-400/30">
+          <motion.article {...swing(1)} className="card spotlight flex flex-col justify-between rounded-[20px] p-7 md:p-8 lg:order-3">
+            <div>
+              <div className="mb-6 flex items-center justify-between">
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-accent-300">
+                  <ScrambleText text="Certifications" retriggerOnHover durationMs={520} />
+                </span>
+                <span className="font-mono text-[11px] text-slate-400">Industry programs</span>
+              </div>
+              <ul className="space-y-6">
+                {certifications.map((cert) => (
+                  <li key={cert.title}>
+                    <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                      <ExtrudedHeading
+                        text={cert.title}
+                        as="h4"
+                        variant="holo"
+                        className="font-display text-[20px] font-medium tracking-tight text-slate-100"
+                      />
+                      <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 font-mono text-[11px] text-slate-300">
                         {cert.issuer}
                       </span>
                     </div>
-                    <p className="text-slate-300 font-body text-xs leading-relaxed">
-                      {cert.focus}
-                    </p>
-                  </div>
+                    <p className="text-[14px] leading-relaxed text-slate-300">{cert.focus}</p>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
-            <div className="pt-6 border-t border-white/[0.08] mt-6 flex items-center gap-2 text-xs font-mono text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)] animate-pulse" />
+            <p className="mt-6 flex items-center gap-2 border-t border-white/10 pt-5 font-mono text-[11px] text-slate-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent-400" aria-hidden="true" />
               Continuous learning & production AI research
-            </div>
-          </motion.div>
+            </p>
+          </motion.article>
         </div>
       </div>
     </section>

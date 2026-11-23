@@ -1,312 +1,243 @@
-import React, { Suspense, lazy, useState, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { ArrowUpRight, Github } from 'lucide-react';
 import SafeBoundary from './SafeBoundary';
+import SectionHeader from './SectionHeader';
 import { featuredProject, additionalProjects, type Project } from '../data/profile';
+import { ExtrudedHeading, Magnetic3D, ScrambleText, SlotRollText } from './KineticText';
 
 const SemanticCluster3D = lazy(() => import('./SemanticCluster3D'));
 
-// ─── GitHub SVG Icon ──────────────────────────────────────────────
-const GitHubIcon: React.FC = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
-    <path d="M9 18c-4.51 2-5-2-7-2" />
-  </svg>
-);
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const DECK_TOP = 96;
+const DECK_STEP = 18;
+const DECK = [featuredProject, ...additionalProjects];
 
-// ─── External Link SVG Icon ──────────────────────────────────────
-const ExternalLinkIcon: React.FC = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-    <polyline points="15 3 21 3 21 9" />
-    <line x1="10" y1="14" x2="21" y2="3" />
-  </svg>
-);
-
-// ─── Architecture strip: data-flow stages with packets travelling through them ──
+// Architecture strip: data-flow stages with packets travelling between them.
 const PipelineFlow: React.FC<{ steps: string[] }> = ({ steps }) => (
-  <ol className="flex flex-wrap items-center gap-y-2 mb-5" aria-label="Architecture data flow">
+  <ol className="mb-5 flex flex-wrap items-center gap-y-2" aria-label="Architecture data flow">
     {steps.map((step, i) => (
       <li key={step} className="flex items-center">
-        <span className="font-mono text-[10px] px-2.5 py-1 rounded-md border border-sky-400/20 bg-sky-500/[0.06] text-sky-100/90 whitespace-nowrap">
+        <span className="whitespace-nowrap rounded-md border border-white/[0.12] bg-white/5 px-2.5 py-1 font-mono text-[10px] text-slate-200">
           {step}
         </span>
-        {i < steps.length - 1 && (
-          <span className="pipe-link" style={{ animationDelay: `${i * 0.35}s` }} aria-hidden="true" />
-        )}
+        {i < steps.length - 1 && <span className="pipe-link" style={{ animationDelay: `${i * 0.35}s` }} aria-hidden="true" />}
       </li>
     ))}
   </ol>
 );
 
-// ─── Project Card with 3D Tilt + Holographic Shimmer ──────────────
-interface ProjectCardProps {
-  project: Project;
+const TechTags: React.FC<{ tags: string[] }> = ({ tags }) => (
+  <div className="flex flex-wrap gap-1.5">
+    {tags.map((tech) => (
+      <span key={tech} className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] text-slate-300">
+        {tech}
+      </span>
+    ))}
+  </div>
+);
+
+const Links: React.FC<{ project: Project }> = ({ project }) =>
+  project.githubUrl || project.liveDemoUrl ? (
+    <div className="mt-6 flex flex-wrap gap-2">
+      {project.githubUrl && (
+        <Magnetic3D strength={0.16} tilt={5}>
+          <a
+            href={project.githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cursor="Open"
+            aria-label={`View ${project.name} on GitHub`}
+            className="slot-roll-trigger btn btn-ghost !px-3.5 !py-1.5 text-[13px]"
+          >
+            <Github className="h-3.5 w-3.5" />
+            <SlotRollText text="GitHub" accentClassName="text-accent-200" />
+          </a>
+        </Magnetic3D>
+      )}
+      {project.liveDemoUrl && (
+        <Magnetic3D strength={0.16} tilt={5}>
+          <a
+            href={project.liveDemoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cursor="Open"
+            aria-label={`View ${project.name} live demo`}
+            className="slot-roll-trigger btn btn-ghost !px-3.5 !py-1.5 text-[13px]"
+          >
+            <SlotRollText text="Live demo" accentClassName="text-accent-200" />
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </a>
+        </Magnetic3D>
+      )}
+    </div>
+  ) : null;
+
+const Index: React.FC<{ i: number; label: string }> = ({ i, label }) => (
+  <p className="mb-4 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-slate-400">
+    <span className="text-accent-300">[{String(i + 1).padStart(2, '0')}]</span>
+    <ScrambleText text={label} retriggerOnHover durationMs={480} />
+  </p>
+);
+
+const FeaturedBody: React.FC = () => (
+  <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
+    <div className="lg:col-span-7">
+      <Index i={0} label="Featured architecture" />
+      <ExtrudedHeading
+        text={featuredProject.name}
+        as="h3"
+        variant="gold"
+        className="mb-2 font-display text-[28px] font-medium leading-[1.05] tracking-display text-slate-100 md:text-[40px]"
+      />
+      {featuredProject.subtitle && <p className="mb-5 font-mono text-[12px] text-slate-400">{featuredProject.subtitle}</p>}
+      <p className="mb-6 text-[15px] leading-relaxed text-slate-300 md:text-[16px]">{featuredProject.description}</p>
+      <PipelineFlow steps={featuredProject.pipeline} />
+      <TechTags tags={featuredProject.techStack} />
+      <Links project={featuredProject} />
+    </div>
+    <div className="w-full lg:col-span-5">
+      <SafeBoundary>
+        <Suspense fallback={<div className="panel h-72 w-full rounded-[16px] md:h-80" />}>
+          <SemanticCluster3D className="h-72 w-full md:h-80" />
+        </Suspense>
+      </SafeBoundary>
+    </div>
+  </div>
+);
+
+const Body: React.FC<{ project: Project; i: number }> = ({ project, i }) => (
+  <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:gap-10">
+    <div className="md:col-span-5">
+      <Index i={i} label={project.subtitle?.split('|')[0].trim() || 'Project'} />
+      <ExtrudedHeading
+        text={project.name}
+        as="h3"
+        variant="holo"
+        className="font-display text-[24px] font-medium leading-[1.08] tracking-tight text-slate-100 md:text-[32px]"
+      />
+      <Links project={project} />
+    </div>
+    <div className="md:col-span-7">
+      <p className="mb-5 text-[14px] leading-relaxed text-slate-300 md:text-[15px]">{project.description}</p>
+      <PipelineFlow steps={project.pipeline} />
+      <TechTags tags={project.techStack} />
+    </div>
+  </div>
+);
+
+/** A slab you can tilt: the pointer writes CSS variables directly, no React render per move. */
+const tilt = (e: React.PointerEvent<HTMLElement>) => {
+  if (e.pointerType !== 'mouse') return;
+  const el = e.currentTarget;
+  const r = el.getBoundingClientRect();
+  el.style.setProperty('--ty', `${((e.clientX - r.left) / r.width - 0.5) * 6}deg`);
+  el.style.setProperty('--tx', `${-((e.clientY - r.top) / r.height - 0.5) * 6}deg`);
+};
+const untilt = (e: React.PointerEvent<HTMLElement>) => {
+  e.currentTarget.style.setProperty('--tx', '0deg');
+  e.currentTarget.style.setProperty('--ty', '0deg');
+};
+
+interface DeckCardProps {
   index: number;
+  self: React.RefObject<HTMLDivElement>;
+  next?: React.RefObject<HTMLDivElement>;
+  deck: boolean;
+  children: React.ReactNode;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [glowPos, setGlowPos] = useState({ x: 50, y: 50 });
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setTilt((prev) => ({
-      x: prev.x + (y * -10 - prev.x) * 0.15,
-      y: prev.y + (x * 10 - prev.y) * 0.15,
-    }));
-    setGlowPos({
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
-    });
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setTilt({ x: 0, y: 0 });
-  }, []);
+/** Sticks under the nav; as the next card slides over it, it tips back into depth and dims. */
+const DeckCard: React.FC<DeckCardProps> = ({ index, self, next, deck, children }) => {
+  const top = DECK_TOP + index * DECK_STEP;
+  // How far the next card has slid over this one, from real on-screen boxes: target-based useScroll
+  // measures sticky elements by layout offsets and read "fully covered" for every card.
+  const { scrollY } = useScroll();
+  const covered = useTransform(scrollY, () => {
+    const el = next?.current;
+    if (!el || !deck) return 0;
+    const span = window.innerHeight - (top + DECK_STEP);
+    return Math.min(1, Math.max(0, (window.innerHeight - el.getBoundingClientRect().top) / span));
+  });
+  const scale = useTransform(covered, [0, 1], [1, 0.92]);
+  const rotateX = useTransform(covered, [0, 1], [0, 4]);
+  const dim = useTransform(covered, [0, 1], [0, 0.62]);
 
   return (
     <motion.div
-      ref={cardRef}
-      initial={{ opacity: 0, y: 50, filter: 'blur(6px)' }}
-      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.7, delay: index * 0.12, ease: [0.16, 1, 0.3, 1] }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="glass-liquid holo-card rounded-xl p-6 cursor-default relative group"
-      style={{
-        transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-        transformStyle: 'preserve-3d',
-        transition: 'transform 100ms ease-out',
-      }}
+      ref={self}
+      style={deck ? { top, scale, rotateX, transformPerspective: 1400 } : { transformPerspective: 1200 }}
+      initial={deck ? undefined : { opacity: 0, y: 40, rotateX: 10 }}
+      whileInView={deck ? undefined : { opacity: 1, y: 0, rotateX: 0 }}
+      viewport={{ once: true, margin: '-8% 0px' }}
+      transition={{ duration: 0.8, ease: EASE }}
+      className={deck ? 'sticky mb-[14vh] origin-top last:mb-0' : 'mb-5'}
     >
-      {/* Spotlight glow that follows cursor */}
       <div
-        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        onPointerMove={tilt}
+        onPointerLeave={untilt}
         style={{
-          background: `radial-gradient(400px circle at ${glowPos.x}% ${glowPos.y}%, rgba(56, 189, 248, 0.08), transparent 50%)`,
+          transform: 'perspective(1100px) rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg))',
+          transition: 'transform 0.35s cubic-bezier(0.22,1,0.36,1)',
         }}
-      />
-
-      <div style={{ transform: 'translateZ(26px)', transformStyle: 'preserve-3d' }}>
-        <h3 className="font-display text-xl font-bold text-slate-100 mb-1 tracking-tight">{project.name}</h3>
-        {project.subtitle && (
-          <p className="font-mono text-xs text-sky-300/90 mb-3">{project.subtitle}</p>
-        )}
-        <p className="text-slate-300 font-body text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
-        <PipelineFlow steps={project.pipeline} />
-
-        {/* Tech tags */}
-        <div className="flex flex-wrap gap-2 mb-5" style={{ transform: 'translateZ(12px)' }}>
-          {project.techStack.map((tech) => (
-            <span
-              key={tech}
-              className="font-mono text-[10px] px-3 py-1.5 rounded-full uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_10px_rgba(56,189,248,0.2)] text-slate-300"
-              style={{
-                border: '1px solid rgba(255,255,255,0.08)',
-                background: 'rgba(255,255,255,0.03)',
-              }}
-            >
-              {tech}
-            </span>
-          ))}
-        </div>
-
-        {/* Links */}
-        <div className="flex gap-3" style={{ transform: 'translateZ(18px)' }}>
-          {project.githubUrl && (
-            <a
-              href={project.githubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-cursor-text="Open"
-              className="glass-liquid text-slate-200 hover:text-black hover:bg-white transition-all px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2 font-medium cursor-pointer"
-              aria-label={`View ${project.name} on GitHub`}
-            >
-              <GitHubIcon />
-              GitHub
-            </a>
-          )}
-          {project.liveDemoUrl && (
-            <a
-              href={project.liveDemoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-cursor-text="Open"
-              className="glass-liquid text-slate-200 hover:text-black hover:bg-white transition-all px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2 font-medium cursor-pointer"
-              aria-label={`View ${project.name} live demo`}
-            >
-              <ExternalLinkIcon />
-              Live Demo
-            </a>
-          )}
-        </div>
+        className="relative"
+      >
+        {/* Glass over an opaque slab: stacked cards must not show the text of the card beneath. */}
+        <span aria-hidden="true" className="absolute inset-0 rounded-[20px] bg-canvas/95" />
+        <article data-guide={index === 0 ? 'featured-project' : undefined} className="card spotlight relative rounded-[20px] p-6 md:p-10">
+          {children}
+          <motion.div style={{ opacity: dim }} className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] bg-canvas" />
+        </article>
       </div>
     </motion.div>
   );
 };
 
-// ─── Main Projects Component ──────────────────────────────────────
+function useMedia(query: string) {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setMatch(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [query]);
+  return match;
+}
+
 const Projects: React.FC = () => {
-  const [featuredTilt, setFeaturedTilt] = useState({ x: 0, y: 0 });
-  const [featuredGlow, setFeaturedGlow] = useState({ x: 50, y: 50 });
-
-  const handleFeaturedMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setFeaturedTilt({ x: y * -6, y: x * 6 });
-    setFeaturedGlow({
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
-    });
-  }, []);
-
-  const handleFeaturedMouseLeave = useCallback(() => {
-    setFeaturedTilt({ x: 0, y: 0 });
-  }, []);
+  // The deck needs every card to fit under the nav; below lg the featured card is too tall to stick.
+  const wide = useMedia('(min-width: 1024px)');
+  const reduced = useReducedMotion();
+  const deck = wide && !reduced;
+  const refs = useMemo(() => DECK.map(() => React.createRef<HTMLDivElement>()), []);
 
   return (
-    <section id="projects" className="bg-background/70 py-24 relative overflow-hidden">
-      {/* Background aurora */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div
-          className="float-orb"
-          style={{
-            width: '350px',
-            height: '350px',
-            background: 'var(--aurora-3)',
-            bottom: '10%',
-            left: '-5%',
-            opacity: 0.04,
-            animationDelay: '-8s',
-          }}
+    <section id="projects" className="relative py-24 md:py-32">
+      <div className="mx-auto max-w-[1200px] px-5">
+        <SectionHeader
+          chapter="05"
+          eyebrow="Selected work"
+          title="Architectures that hold up."
+          lead="Production-grade AI architectures, semantic retrieval engines and full-stack systems. Scroll to deal the deck."
         />
-      </div>
 
-      <div className="container mx-auto px-4 max-w-5xl relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center mb-16"
-        >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-slate-100 mb-4 tracking-tight">Projects</h2>
-          <p className="text-slate-400 font-body max-w-xl mx-auto">Production-grade AI architectures, semantic retrieval engines, and full-stack systems</p>
-          <motion.div
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="aurora-divider mx-auto mt-4"
-            style={{ maxWidth: '80px', transformOrigin: 'center' }}
-          />
-        </motion.div>
-
-        {/* ═══ Featured project card with 3D Semantic Cluster ═══ */}
-        <motion.div
-          initial={{ opacity: 0, y: 50, filter: 'blur(8px)' }}
-          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          onMouseMove={handleFeaturedMouseMove}
-          onMouseLeave={handleFeaturedMouseLeave}
-          data-guide="featured-project"
-          className="glass-liquid holo-card rounded-2xl p-8 md:p-10 relative overflow-hidden cursor-default mb-10 group"
-          style={{
-            transform: `perspective(1000px) rotateX(${featuredTilt.x}deg) rotateY(${featuredTilt.y}deg)`,
-            transition: 'transform 400ms ease',
-          }}
-        >
-          {/* Aurora top border */}
-          <div
-            className="absolute top-0 left-0 right-0 h-[2px]"
-            style={{
-              background: 'linear-gradient(90deg, var(--aurora-1), var(--aurora-2), var(--aurora-3))',
-              boxShadow: '0 0 20px rgba(56, 189, 248, 0.25)',
-            }}
-          />
-
-          {/* Spotlight glow */}
-          <div
-            className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-            style={{
-              background: `radial-gradient(600px circle at ${featuredGlow.x}% ${featuredGlow.y}%, rgba(56, 189, 248, 0.05), transparent 50%)`,
-            }}
-          />
-
-          <div className="grid lg:grid-cols-12 gap-8 items-center">
-            {/* Left: Content (7 cols) */}
-            <div className="lg:col-span-7">
-              <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-sky-300 font-semibold">
-                  Featured Architecture
-                </span>
-              </div>
-              <h3 className="font-display text-2xl sm:text-3xl font-bold text-slate-100 mb-2 tracking-tight">
-                {featuredProject.name}
-              </h3>
-              {featuredProject.subtitle && (
-                <p className="font-mono text-xs text-sky-300/90 mb-4 font-medium">{featuredProject.subtitle}</p>
-              )}
-              <p className="text-slate-300 font-body text-sm sm:text-base leading-relaxed mb-6">
-                {featuredProject.description}
-              </p>
-              <PipelineFlow steps={featuredProject.pipeline} />
-              <div className="flex flex-wrap gap-2">
-                {featuredProject.techStack.map((tech) => (
-                  <span
-                    key={tech}
-                    className="font-mono text-xs px-3 py-1 rounded-full border border-sky-400/20 bg-sky-500/5 text-slate-200"
-                  >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: Live Interactive 3D Semantic Vector Space (5 cols) */}
-            <div className="lg:col-span-5 w-full">
-              <SafeBoundary>
-                <Suspense fallback={<div className="w-full h-72 md:h-80 rounded-xl glass-panel" />}>
-                  <SemanticCluster3D className="w-full h-72 md:h-80" />
-                </Suspense>
-              </SafeBoundary>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ═══ Projects bento grid ═══ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {additionalProjects.map((project, index) => (
-            <ProjectCard key={project.id} project={project} index={index} />
+        <div className={deck ? 'pb-[10vh]' : ''}>
+          {DECK.map((project, i) => (
+            <DeckCard key={project.id} index={i} self={refs[i]} next={refs[i + 1]} deck={deck}>
+              {i === 0 ? <FeaturedBody /> : <Body project={project} i={i} />}
+            </DeckCard>
           ))}
         </div>
 
-        {/* View more on GitHub */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mt-12"
-        >
-          <a
-            href="https://github.com/koshal0304"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-cursor-text="Open"
-            className="inline-flex items-center gap-2 text-slate-300 hover:text-white transition-all px-6 py-3 rounded-lg font-mono text-sm cursor-pointer glow-button"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            <GitHubIcon />
-            View More on GitHub
-          </a>
-        </motion.div>
+        <div className="mt-12 text-center">
+          <Magnetic3D strength={0.18} tilt={5}>
+            <a href="https://github.com/koshal0304" target="_blank" rel="noopener noreferrer" data-cursor="Open" className="slot-roll-trigger btn btn-ghost">
+              <Github className="h-4 w-4" />
+              <SlotRollText text="More on GitHub" accentClassName="text-accent-200" />
+              <ArrowUpRight className="h-4 w-4" />
+            </a>
+          </Magnetic3D>
+        </div>
       </div>
     </section>
   );

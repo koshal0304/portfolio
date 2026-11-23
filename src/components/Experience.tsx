@@ -1,177 +1,304 @@
-import React, { useState } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { useRef } from 'react';
-import { roles } from '../data/profile';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
+import { roles, type RoleData } from '../data/profile';
+import SectionHeader from './SectionHeader';
+import { ExtrudedHeading, ScrambleText, SlotRollText } from './KineticText';
 
-const Experience: React.FC = () => {
-  const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start end', 'end start'] });
-  const lineScaleY = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
-  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const GAP = 72;
+// Pin first: the first card holds centre for a beat before the track moves, the last one after.
+const HOLD = [0.08, 0.92];
+const yearOf = (role: RoleData) => role.duration.match(/\d{4}/)?.[0] ?? '';
+
+function useMedia(query: string) {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setMatch(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [query]);
+  return match;
+}
+
+const RoleCard: React.FC<{ role: RoleData; index: number }> = ({ role, index }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <article data-guide={index === 0 ? 'current-role' : undefined} className="card spotlight rounded-[20px] p-6 md:p-8">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <ExtrudedHeading
+            text={role.company}
+            as="h3"
+            variant="gold"
+            className="font-display text-[22px] font-medium leading-tight tracking-tight text-slate-100 md:text-[28px]"
+          />
+          <p className="mt-1 text-[13px] text-slate-300">
+            {role.title}
+            <span className="mx-1.5 text-slate-500">·</span>
+            <span className="text-slate-400">{role.location}</span>
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] text-slate-300">
+          {role.duration}
+        </span>
+      </div>
+
+      {role.subtitle && (
+        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.12em] text-accent-300">
+          <ScrambleText text={role.subtitle} retriggerOnHover durationMs={520} />
+        </p>
+      )}
+      <p className="mb-5 text-[15px] leading-relaxed text-slate-300">{role.summary}</p>
+
+      <div className="mb-5 flex flex-wrap gap-1.5">
+        {(open ? role.allTags : role.tags).map((tag) => (
+          <span key={tag} className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] text-slate-300 transition-colors hover:border-accent-300/35 hover:text-slate-100">
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="slot-roll-trigger inline-flex cursor-pointer items-center gap-1.5 text-[13px] text-slate-200 transition-colors hover:text-accent-300"
+      >
+        <SlotRollText
+          text={open ? 'Hide projects' : `Show all ${role.projects.length} projects`}
+          accentClassName="text-accent-300"
+        />
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.45, ease: EASE }}
+            className="overflow-hidden"
+          >
+            {/* Scrolls on its own inside the pinned track; Lenis must not hijack it. */}
+            <ul data-lenis-prevent className="mt-5 max-h-[30vh] space-y-4 overflow-y-auto border-t border-white/10 pr-2 pt-5">
+              {role.projects.map((project) => (
+                <li key={project.name} className="flex gap-3">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-400" aria-hidden="true" />
+                  <div>
+                    <span className="mb-0.5 block text-[14px] font-medium text-slate-100">{project.name}</span>
+                    <p className="text-[14px] leading-relaxed text-slate-300">{project.description}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </article>
+  );
+};
+
+interface SlotProps {
+  role: RoleData;
+  index: number;
+  x: MotionValue<number>;
+  centre: number;
+  step: number;
+  vw: number;
+  width: number;
+  onFocusCard: (index: number) => void;
+}
+
+/** One coverflow slab: turns toward the centre, recedes and dims with its distance from it. */
+const CoverSlot: React.FC<SlotProps> = ({ role, index, x, centre, step, vw, width, onFocusCard }) => {
+  const n = useTransform(x, (v) => (centre + v - vw / 2) / step); // distance from centre, in cards
+  const near = useTransform(n, (v) => Math.min(Math.abs(v), 1.4));
+  const rotateY = useTransform(n, (v) => Math.max(-38, Math.min(38, -v * 30)));
+  const scale = useTransform(near, (v) => 1 - v * 0.12);
+  const opacity = useTransform(near, (v) => 1 - v * 0.42);
+  const z = useTransform(near, (v) => -v * 150);
+  const ghostX = useTransform(n, (v) => v * -110);
 
   return (
-    <section id="experience" ref={sectionRef} className="bg-background/70 py-24 relative overflow-hidden">
-      {/* Background aurora orb */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div
-          className="float-orb"
-          style={{
-            width: '400px',
-            height: '400px',
-            background: 'var(--aurora-2)',
-            top: '20%',
-            right: '-10%',
-            opacity: 0.05,
-            animationDelay: '-3s',
-          }}
-        />
-      </div>
+    <motion.div
+      style={{ width, rotateY, scale, opacity, z }}
+      onFocusCapture={() => onFocusCard(index)}
+      className="relative shrink-0 [transform-style:preserve-3d]"
+    >
+      <motion.span
+        aria-hidden="true"
+        style={{ x: ghostX }}
+        className="pointer-events-none absolute -top-24 left-5 translate-y-1.5 select-none font-display text-[150px] font-semibold leading-none tracking-[-0.06em] text-transparent [-webkit-text-stroke:1px_rgba(244,182,120,0.09)] blur-[1px]"
+      >
+        {yearOf(role)}
+      </motion.span>
+      <motion.span
+        aria-hidden="true"
+        style={{ x: ghostX }}
+        className="pointer-events-none absolute -top-24 left-4 select-none font-display text-[150px] font-semibold leading-none tracking-[-0.06em] text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.1)]"
+      >
+        {yearOf(role)}
+      </motion.span>
+      {/* The sky's particles stay a glow behind the glass instead of crossing the text. */}
+      <span aria-hidden="true" className="absolute inset-0 rounded-[20px] bg-canvas/60" />
+      <RoleCard role={role} index={index} />
+    </motion.div>
+  );
+};
 
-      <div className="container mx-auto px-4 max-w-4xl relative z-10">
-        {/* Title with border glow */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center mb-20"
+const Tick: React.FC<{ progress: MotionValue<number>; at: number; role: RoleData }> = ({ progress, at, role }) => {
+  const lit = useTransform(progress, (p) => (p >= at - 0.02 ? 1 : 0.3));
+  return (
+    <motion.div style={{ left: `${at * 100}%`, opacity: lit }} className="absolute top-0 -translate-x-1/2">
+      <span className="mx-auto block h-3 w-px -translate-y-1.5 bg-slate-300" />
+      <span className="mt-3 block whitespace-nowrap text-center font-mono text-[10px] uppercase tracking-[0.12em] text-slate-300">
+        {role.company}
+      </span>
+      <span className="block whitespace-nowrap text-center font-mono text-[10px] text-slate-500">{yearOf(role)}</span>
+    </motion.div>
+  );
+};
+
+/** lg+: the section pins and the career travels sideways past you, newest first, like a camera dolly. */
+const HorizontalTimeline: React.FC = () => {
+  const wrap = useRef<HTMLDivElement>(null);
+  const [geo, setGeo] = useState(() => ({ vw: document.documentElement.clientWidth, card: 620 }));
+  useEffect(() => {
+    const measure = () => {
+      const vw = document.documentElement.clientWidth;
+      setGeo({ vw, card: Math.round(Math.min(640, Math.max(500, vw * 0.44))) });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  const pad = (geo.vw - geo.card) / 2;
+  const step = geo.card + GAP;
+  const dist = step * (roles.length - 1);
+  const { scrollYProgress } = useScroll({ target: wrap, offset: ['start start', 'end end'] });
+  const progress = useTransform(scrollYProgress, HOLD, [0, 1]);
+  const x = useTransform(progress, (p) => -p * dist);
+  const comet = useTransform(progress, (p) => `${p * 100}%`);
+  const hint = useTransform(scrollYProgress, [0, 0.07], [1, 0]);
+  const count = useTransform(progress, (p) => String(Math.round(p * (roles.length - 1)) + 1).padStart(2, '0'));
+  const height = Math.round(dist * 1.35);
+
+  // Keyboard users tab into a card that may be off to the side: bring the page to where it is centred.
+  const focusCard = (i: number) => {
+    const el = wrap.current;
+    if (!el) return;
+    const span = el.offsetHeight - window.innerHeight;
+    const p = HOLD[0] + (i / (roles.length - 1)) * (HOLD[1] - HOLD[0]);
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + p * span, behavior: 'smooth' });
+  };
+
+  return (
+    <div ref={wrap} className="relative" style={{ height: `calc(100vh + ${height}px)` }}>
+      <div className="sticky top-0 flex h-screen flex-col justify-center overflow-hidden [perspective:1600px]">
+        <div className="pointer-events-none absolute left-8 top-24 flex items-baseline gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 xl:left-12">
+          <motion.span className="text-[13px] text-slate-100">{count}</motion.span>
+          <span>/ {String(roles.length).padStart(2, '0')}</span>
+        </div>
+        <motion.p
+          style={{ opacity: hint }}
+          className="pointer-events-none absolute right-8 top-24 font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 xl:right-12"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-slate-100 mb-4 tracking-tight">
-            Career Timeline
-          </h2>
-          <p className="text-slate-400 font-body text-base">End-to-end ownership, verified production deployments</p>
-          {/* Aurora underline */}
-          <motion.div
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="aurora-divider mx-auto mt-6"
-            style={{ maxWidth: '120px', transformOrigin: 'center' }}
-          />
+          Scroll · travel back in time →
+        </motion.p>
+
+        <motion.div style={{ x, paddingLeft: pad, paddingRight: pad, gap: GAP }} className="flex items-center [transform-style:preserve-3d]">
+          {roles.map((role, i) => (
+            <CoverSlot
+              key={role.company}
+              role={role}
+              index={i}
+              x={x}
+              centre={pad + i * step + geo.card / 2}
+              step={step}
+              vw={geo.vw}
+              width={geo.card}
+              onFocusCard={focusCard}
+            />
+          ))}
         </motion.div>
 
-        {/* Timeline */}
-        <div className="relative">
-          {/* Center vertical line — neon gradient */}
-          <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px">
-            <div className="absolute inset-0 bg-gradient-to-b from-sky-400/20 via-indigo-400/20 to-pink-400/20" />
-            <motion.div
-              style={{ scaleY: lineScaleY, transformOrigin: 'top' }}
-              className="absolute inset-0 bg-gradient-to-b from-sky-400 via-indigo-400 to-pink-400"
-            />
+        {/* The rail: progress fill with a comet riding its head; each role lights up as you reach it. */}
+        <div className="absolute bottom-20 left-1/2 w-[min(760px,70vw)] -translate-x-1/2" aria-hidden="true">
+          <div className="relative h-px bg-white/[0.14]">
+            <motion.div style={{ scaleX: progress }} className="absolute inset-0 origin-left bg-gradient-to-r from-accent-400/20 to-accent-300" />
+            <motion.div style={{ x: comet }} className="absolute inset-0">
+              <span className="absolute -left-16 top-0 h-px w-16 bg-gradient-to-r from-transparent to-accent-200" />
+              <span className="absolute -left-[5px] -top-[5px] h-[11px] w-[11px] rounded-full bg-accent-100 shadow-[0_0_16px_5px_rgba(244,182,120,0.55)]" />
+            </motion.div>
+            {roles.map((role, i) => (
+              <Tick key={role.company} progress={progress} at={i / (roles.length - 1)} role={role} />
+            ))}
           </div>
-
-          {/* Role Cards */}
-          {roles.map((role, idx) => {
-            const isExpanded = expandedCard === idx;
-            const isLeft = idx % 2 === 0;
-
-            return (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: isLeft ? -50 : 50, filter: 'blur(6px)' }}
-                whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className={`relative mb-16 pl-16 md:pl-0 ${
-                  isLeft ? 'md:pr-[calc(50%+2rem)] md:text-right' : 'md:pl-[calc(50%+2rem)]'
-                }`}
-              >
-                {/* Timeline node with pulse ring */}
-                <div className="absolute left-4 md:left-1/2 md:-translate-x-1/2 top-0 z-10">
-                  <div
-                    className="w-5 h-5 rounded-full pulse-ring relative bg-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.5)]"
-                  />
-                </div>
-
-                {/* Card — holographic shimmer */}
-                <div
-                  data-guide={idx === 0 ? 'current-role' : undefined}
-                  className="glass-liquid holo-card rounded-2xl p-6 md:p-8 border border-white/[0.08] hover:border-white/20 transition-all"
-                >
-                  <div className={`flex flex-col ${isLeft ? 'md:items-end' : 'md:items-start'} gap-2 mb-4`}>
-                    <h3 className="font-display text-xl md:text-2xl font-bold text-slate-100">{role.company}</h3>
-                    <div className="flex items-center gap-2 flex-wrap text-slate-400 font-mono text-xs sm:text-sm">
-                      <span className="text-slate-300 font-medium">{role.title}</span>
-                      <span className="text-slate-500">·</span>
-                      <span className="text-slate-400">{role.location}</span>
-                    </div>
-                    {role.subtitle && (
-                      <p className="font-mono text-xs text-sky-300/90 tracking-wide font-medium">
-                        {role.subtitle}
-                      </p>
-                    )}
-                    <span
-                      className="inline-block font-mono text-xs px-3 py-1 rounded-full border border-sky-400/30 text-sky-300 bg-sky-950/30 shadow-[0_0_10px_rgba(56,189,248,0.1)]"
-                    >
-                      {role.duration}
-                    </span>
-                  </div>
-
-                  <p className="text-slate-300 font-body text-sm mb-5 leading-relaxed">{role.summary}</p>
-
-                  {/* Tags */}
-                  <div className={`flex flex-wrap gap-2 mb-4 ${isLeft ? 'md:justify-end' : ''}`}>
-                    {(isExpanded ? role.allTags : role.tags).map((tag) => (
-                      <span
-                        key={tag}
-                        className="font-mono text-xs px-2.5 py-0.5 rounded-full border border-sky-400/20 bg-sky-500/5 text-sky-300/90 transition-colors"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Expand toggle */}
-                  <button
-                    onClick={() => setExpandedCard(isExpanded ? null : idx)}
-                    className="font-mono text-xs hover:underline mb-2 cursor-pointer transition-colors duration-300 text-sky-400 hover:text-sky-300 flex items-center gap-1 inline-flex"
-                    data-cursor-text={isExpanded ? 'Less' : 'More'}
-                  >
-                    <span>{isExpanded ? 'Collapse ↑' : `Show All ${role.projects.length} Projects ↓`}</span>
-                  </button>
-
-                  {/* Expanded projects */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <div className="space-y-4 pt-4 border-t border-white/[0.08]">
-                          {role.projects.map((project, pIdx) => (
-                            <motion.div
-                              key={pIdx}
-                              initial={{ opacity: 0, x: isLeft ? 20 : -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: pIdx * 0.05 }}
-                              className={`flex gap-3 ${isLeft ? 'md:flex-row-reverse md:text-right' : ''}`}
-                            >
-                              <div
-                                className="w-2 h-2 rounded-full mt-2 flex-shrink-0 bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]"
-                              />
-                              <div>
-                                <span className="font-semibold text-sm text-sky-200 block mb-0.5">
-                                  {project.name}
-                                </span>
-                                <p className="text-slate-300 text-sm leading-relaxed">{project.description}</p>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            );
-          })}
         </div>
       </div>
+    </div>
+  );
+};
+
+/** Phones, tablets and reduced motion: a vertical path; cards swing in from alternating sides. */
+const VerticalTimeline: React.FC = () => {
+  const list = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: list, offset: ['start 0.75', 'end 0.6'] });
+  return (
+    <div ref={list} className="relative mx-auto max-w-[760px] px-5 [perspective:1400px]">
+      <div className="absolute bottom-2 left-[31px] top-2 w-px" aria-hidden="true">
+        <div className="absolute inset-0 bg-white/10" />
+        <motion.div style={{ scaleY: scrollYProgress }} className="absolute inset-0 origin-top bg-accent-400/80" />
+      </div>
+      {roles.map((role, i) => (
+        <motion.div
+          key={role.company}
+          initial={{ opacity: 0, x: i % 2 ? 56 : -56, rotateY: i % 2 ? -16 : 16 }}
+          whileInView={{ opacity: 1, x: 0, rotateY: 0 }}
+          viewport={{ once: true, margin: '-10% 0px' }}
+          transition={{ duration: 0.9, ease: EASE }}
+          className="relative mb-10 pl-10 last:mb-0"
+        >
+          <motion.span
+            aria-hidden="true"
+            initial={{ scale: 0.4, opacity: 0.35 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true, margin: '-45% 0px -45% 0px' }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className={`absolute left-[6px] top-8 z-10 h-[11px] w-[11px] rounded-full border-2 border-canvas bg-accent-400 ${i === 0 ? 'pulse-ring' : ''}`}
+          />
+          <RoleCard role={role} index={i} />
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
+const Experience: React.FC = () => {
+  const wide = useMedia('(min-width: 1024px)');
+  const reduced = useReducedMotion();
+  return (
+    <section id="experience" className="relative pt-24 md:pt-32">
+      <div className="mx-auto max-w-[1100px] px-5">
+        <SectionHeader
+          chapter="03"
+          eyebrow="Career"
+          title="Shipped, not prototyped."
+          lead="End-to-end ownership across three AI teams — from first commit to production traffic."
+          className="!mb-0 lg:!mb-0"
+        />
+      </div>
+      {wide && !reduced ? (
+        <HorizontalTimeline />
+      ) : (
+        <div className="pb-24 pt-14 md:pb-32 md:pt-20">
+          <VerticalTimeline />
+        </div>
+      )}
     </section>
   );
 };

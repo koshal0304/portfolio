@@ -16,26 +16,28 @@
 
 ### Color Palette
 
-| Role | Hex | CSS Variable |
+| Role | Hex | CSS Variable / Tailwind |
 |------|-----|--------------|
-| Primary | `#18181B` | `--color-primary` |
-| Secondary | `#3F3F46` | `--color-secondary` |
-| CTA/Accent | `#2563EB` | `--color-cta` |
-| Background | `#FAFAFA` | `--color-background` |
-| Text | `#09090B` | `--color-text` |
+| Canvas (page) | `#3a3f4e` | `--canvas` / `bg-canvas` |
+| Raised (cards) | `#484e60` | `--raised` / `card` |
+| Sunken (wells, inputs) | `#2e323e` | `--sunken` / `panel` |
+| Deep (footer, overlays) | `#22252f` | `--deep` |
+| Ink (text) | `#f4f5f7` | `--ink` / `text-slate-100` |
+| Accent (golden hour) | `#f4b678` | `--accent` / `accent-400` |
 
-**Color Notes:** Monochrome + blue accent
+**Color Notes:** Dusk slate + golden hour, balanced mid-tone (neither OLED-dark nor light). Taken from the
+digital twin: slate waistcoat, white shirt, gold frames. One accent, under 5% of pixels (CTAs, stat numbers,
+active states). The `slate` ramp is re-tuned so `slate-500` and lighter keep 4.5:1 on the canvas.
 
 ### Typography
 
-- **Heading Font:** Archivo
-- **Body Font:** Space Grotesk
-- **Mood:** minimal, portfolio, designer, creative, clean, artistic
-- **Google Fonts:** [Archivo + Space Grotesk](https://fonts.google.com/share?selection.family=Archivo:wght@300;400;500;600;700|Space+Grotesk:wght@300;400;500;600;700)
+- **Font:** Geist (display + body), Geist Mono (eyebrows, labels, numbers only)
+- **Display:** weight 500, tracking `-0.045em` (`tracking-display`), line-height ~1.0
+- **Google Fonts:** [Geist + Geist Mono](https://fonts.google.com/share?selection.family=Geist:wght@300..700|Geist+Mono:wght@400..600)
 
 **CSS Import:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap');
 ```
 
 ### Spacing Variables

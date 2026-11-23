@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import {
   Terminal,
   ShieldCheck,
@@ -16,12 +16,67 @@ import {
   Cpu,
   Activity,
   ScanSearch,
+  Radio,
 } from 'lucide-react';
 import RetrievalLab from './lab/RetrievalLab';
+import SafeBoundary from './SafeBoundary';
 import { inspect, type Verdict } from '../lib/retrieval';
 import { ASK_EVENT } from '../lib/askLab';
+import { ExtrudedHeading, Magnetic3D, ScrambleText, SlotRollText } from './KineticText';
+import { EASE } from '../lib/kineticPresets';
+
+const LabHoloStage = lazy(() => import('./lab/LabHoloStage'));
 
 type SandboxTab = 'rag' | 'copilot' | 'pipeline' | 'guardrails';
+
+const TAB_CONFIG: {
+  id: SandboxTab;
+  label: string;
+  protocol: string;
+  accentHex: string;
+  glowClass: string;
+  icon: React.FC<{ className?: string }>;
+  iconColor: string;
+  guideAttr?: string;
+}[] = [
+  {
+    id: 'rag',
+    label: 'Live RAG',
+    protocol: 'HYBRID_RAG // PCA-3D MANIFOLD',
+    accentHex: '#7ee0c0',
+    glowClass: 'from-emerald-400/20 via-accent-400/15 to-transparent',
+    icon: ScanSearch,
+    iconColor: 'text-emerald-400',
+  },
+  {
+    id: 'copilot',
+    label: 'Agent Copilot',
+    protocol: 'LANGGRAPH_DAG // MULTI-AGENT CORE',
+    accentHex: '#f4b678',
+    glowClass: 'from-accent-400/22 via-indigo-400/15 to-transparent',
+    icon: Bot,
+    iconColor: 'text-accent-400',
+  },
+  {
+    id: 'pipeline',
+    label: 'RAG & SQL Pipeline',
+    protocol: 'NL2SQL_AST // 4-STAGE ACCELERATOR',
+    accentHex: '#a5b4fc',
+    glowClass: 'from-indigo-400/22 via-emerald-400/15 to-transparent',
+    icon: Layers,
+    iconColor: 'text-indigo-400',
+  },
+  {
+    id: 'guardrails',
+    label: 'Defense Sandbox',
+    protocol: 'ZERO_TRUST // ADVERSARIAL SHIELD',
+    accentHex: '#f5a3b7',
+    glowClass: 'from-rose-400/22 via-accent-400/12 to-transparent',
+    icon: ShieldCheck,
+    iconColor: 'text-pink-400',
+    guideAttr: 'defense-tab',
+  },
+];
 
 const ATTACKS = [
   {
@@ -242,6 +297,19 @@ const PRESET_DATA: Record<string, CopilotPreset> = {
   },
 };
 
+const cardTilt = (e: React.PointerEvent<HTMLElement>) => {
+  if (e.pointerType !== 'mouse') return;
+  const el = e.currentTarget;
+  const r = el.getBoundingClientRect();
+  el.style.setProperty('--ly', `${((e.clientX - r.left) / r.width - 0.5) * 6}deg`);
+  el.style.setProperty('--lx', `${-((e.clientY - r.top) / r.height - 0.5) * 6}deg`);
+};
+
+const cardUntilt = (e: React.PointerEvent<HTMLElement>) => {
+  e.currentTarget.style.setProperty('--lx', '0deg');
+  e.currentTarget.style.setProperty('--ly', '0deg');
+};
+
 // ─── Component ─────────────────────────────────────────────────────
 const AIEngineerSandbox: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SandboxTab>('rag');
@@ -251,6 +319,7 @@ const AIEngineerSandbox: React.FC = () => {
   const [inputQuery, setInputQuery] = useState<string>('');
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [visibleSteps, setVisibleSteps] = useState<number>(0);
+  const [hoveredPillar, setHoveredPillar] = useState<number | null>(null);
   const [activePresetData, setActivePresetData] = useState<CopilotPreset>(PRESET_DATA.langgraph);
   const [ragSeed, setRagSeed] = useState<{ q: string; n: number } | null>(null);
 
@@ -264,8 +333,16 @@ const AIEngineerSandbox: React.FC = () => {
   // Guardrail Sandbox State
   const [guardInput, setGuardInput] = useState('');
   const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [guardNonce, setGuardNonce] = useState(0);
+
+  // Telemetry cursor readout (ref-updated DOM text to avoid re-renders on mouse move)
+  const coordRef = useRef<HTMLSpanElement>(null);
+  const simIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pipeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
   const runGuard = (payload: string) => {
     setGuardInput(payload);
+    setGuardNonce((n) => n + 1);
     setVerdict(payload.trim() ? inspect(payload) : null);
   };
 
@@ -280,20 +357,21 @@ const AIEngineerSandbox: React.FC = () => {
     return () => window.removeEventListener(ASK_EVENT, onAsk);
   }, []);
 
-  // Trigger simulation on query change
   const runCopilotSimulation = (presetKey: string) => {
+    if (simIntervalRef.current) clearInterval(simIntervalRef.current);
     setIsSimulating(true);
     setVisibleSteps(0);
-    setActivePresetData(PRESET_DATA[presetKey] || PRESET_DATA.langgraph);
-
-    const steps = (PRESET_DATA[presetKey] || PRESET_DATA.langgraph).thoughtSteps;
+    setHoveredPillar(null);
+    const data = PRESET_DATA[presetKey] || PRESET_DATA.langgraph;
+    setActivePresetData(data);
 
     let step = 0;
-    const stepInterval = setInterval(() => {
+    simIntervalRef.current = setInterval(() => {
       step++;
       setVisibleSteps(step);
-      if (step >= steps.length) {
-        clearInterval(stepInterval);
+      if (step >= data.thoughtSteps.length) {
+        if (simIntervalRef.current) clearInterval(simIntervalRef.current);
+        simIntervalRef.current = null;
         setIsSimulating(false);
       }
     }, 240);
@@ -301,389 +379,628 @@ const AIEngineerSandbox: React.FC = () => {
 
   useEffect(() => {
     runCopilotSimulation('langgraph');
+    return () => {
+      if (simIntervalRef.current) clearInterval(simIntervalRef.current);
+      pipeTimersRef.current.forEach(clearTimeout);
+    };
   }, []);
 
-  // Run Pipeline Simulator
+  const panelRef = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress: lift } = useScroll({ target: panelRef, offset: ['start end', 'start 0.3'] });
+  const rotateX = useTransform(lift, [0, 1], [20, 0]);
+  const rise = useTransform(lift, [0, 1], [110, 0]);
+  const scale = useTransform(lift, [0, 1], [0.91, 1]);
+  const opacity = useTransform(lift, [0, 1], [0.35, 1]);
+  const gridY = useTransform(lift, [0, 1], ['26%', '12%']);
+  const scanned = useInView(panelRef, { once: true, margin: '-20% 0px' });
+
   const handleRunPipeline = () => {
+    pipeTimersRef.current.forEach(clearTimeout);
+    pipeTimersRef.current = [];
     setIsPipelineRunning(true);
     setPipelineStep(1);
-    setTimeout(() => setPipelineStep(2), 500);
-    setTimeout(() => setPipelineStep(3), 1000);
-    setTimeout(() => {
-      setPipelineStep(4);
-      setIsPipelineRunning(false);
-    }, 1500);
+    pipeTimersRef.current.push(
+      setTimeout(() => setPipelineStep(2), 480),
+      setTimeout(() => setPipelineStep(3), 960),
+      setTimeout(() => {
+        setPipelineStep(4);
+        setIsPipelineRunning(false);
+      }, 1440)
+    );
+  };
+
+  const activeConfig = TAB_CONFIG.find((t) => t.id === activeTab) ?? TAB_CONFIG[0];
+  const dynamicMoodHex =
+    activeTab === 'guardrails' && verdict
+      ? verdict.blocked
+        ? '#fb7185'
+        : '#34d399'
+      : activeConfig.accentHex;
+
+  const onConsolePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || !panelRef.current) return;
+    const r = panelRef.current.getBoundingClientRect();
+    const nx = ((e.clientX - r.left) / r.width) * 2 - 1;
+    const ny = -(((e.clientY - r.top) / r.height) * 2 - 1);
+    if (coordRef.current) {
+      coordRef.current.textContent = `VEC ${nx >= 0 ? '+' : ''}${nx.toFixed(2)}, ${ny >= 0 ? '+' : ''}${ny.toFixed(2)}`;
+    }
   };
 
   return (
-    <div className="w-full relative z-20">
-      {/* Outer Panel Frame */}
-      <div className="relative rounded-2xl p-[1px] bg-gradient-to-b from-sky-500/20 via-indigo-500/10 to-transparent shadow-2xl">
-        <div className="bg-[#0c1017] rounded-2xl overflow-hidden border border-white/[0.08]">
-          {/* Header Bar with Live Telemetry */}
-          <div className="px-5 py-3.5 bg-white/[0.015] border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-                <span className="font-mono text-xs font-semibold text-emerald-400 tracking-wider uppercase">
-                  AI Systems Online
+    <div className="relative z-20 w-full [perspective:1600px] [perspective-origin:50%_0%]">
+      {/* Outer Holographic Spatial Chamber Backdrop */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-x-10 -bottom-16 -top-12 -z-10 overflow-hidden rounded-[36px]"
+      >
+        {/* Perspective architectural grid plane with scroll parallax */}
+        <motion.div
+          className="lab-chamber-grid absolute inset-0 opacity-75"
+          style={
+            reduce
+              ? {
+                  transform: 'perspective(900px) rotateX(48deg) translateY(16%) scale(1.25)',
+                  transformOrigin: '50% 60%',
+                }
+              : {
+                  perspective: 900,
+                  rotateX: 48,
+                  y: gridY,
+                  scale: 1.25,
+                  transformOrigin: '50% 60%',
+                }
+          }
+        />
+        {/* Reactive ambient plasma halo shifting with active lab subsystem */}
+        <div
+          className="absolute left-1/2 top-1/2 h-[78%] w-[84%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl transition-all duration-700"
+          style={{
+            background: `radial-gradient(closest-side, ${dynamicMoodHex}24, rgba(165,180,252,0.08) 55%, transparent)`,
+          }}
+        />
+      </div>
+
+      {/* Main 3D Elevated Holographic Laboratory Console */}
+      <motion.div
+        ref={panelRef}
+        onPointerMove={onConsolePointerMove}
+        style={reduce ? undefined : { rotateX, y: rise, scale, opacity, transformOrigin: '50% 100%' }}
+        className="spotlight relative rounded-[24px] p-px shadow-[0_50px_100px_-42px_rgba(6,8,16,0.9)] transition-[background] duration-700"
+      >
+        {/* Dynamic luminous rim border */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 rounded-[24px] transition-all duration-700"
+          style={{
+            background: `linear-gradient(148deg, ${dynamicMoodHex}66 0%, rgba(255,255,255,0.18) 28%, rgba(255,255,255,0.05) 68%, ${dynamicMoodHex}55 100%)`,
+          }}
+        />
+
+        {/* Corner Optical Targeting Brackets */}
+        <span aria-hidden="true" className="pointer-events-none absolute -left-2 -top-2 h-5 w-5 rounded-tl-md border-l-2 border-t-2 border-accent-300/60" />
+        <span aria-hidden="true" className="pointer-events-none absolute -right-2 -top-2 h-5 w-5 rounded-tr-md border-r-2 border-t-2 border-accent-300/60" />
+        <span aria-hidden="true" className="pointer-events-none absolute -bottom-2 -left-2 h-5 w-5 rounded-bl-md border-b-2 border-l-2 border-accent-300/45" />
+        <span aria-hidden="true" className="pointer-events-none absolute -bottom-2 -right-2 h-5 w-5 rounded-br-md border-b-2 border-r-2 border-accent-300/45" />
+
+        {/* Entrance holographic light scanbeam */}
+        {scanned && !reduce && (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 overflow-hidden rounded-[24px]">
+            <motion.div
+              initial={{ y: '-54%' }}
+              animate={{ y: '56%' }}
+              transition={{ duration: 1.85, delay: 0.12, ease: [0.3, 0, 0.3, 1] }}
+              className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_38%,rgba(253,219,180,0.06)_44%,rgba(165,180,252,0.18)_49.2%,rgba(255,244,232,0.9)_50%,rgba(253,219,180,0.14)_50.4%,transparent_52%)] mix-blend-plus-lighter"
+            />
+          </div>
+        )}
+
+        <div className="relative overflow-hidden rounded-[23px] bg-raised/78">
+          {/* Subtle top ambient plasma bar */}
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b ${activeConfig.glowClass} transition-all duration-700`}
+          />
+
+          {/* Futuristic Telemetry Masthead + Magnetic 3D Mode Dock */}
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.09] bg-deep/55 px-5 py-4 backdrop-blur-md">
+            <div className="flex items-center gap-3.5">
+              {/* Live Neural Activity Equalizer */}
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-4 items-end gap-[2px]" aria-hidden="true">
+                  {[0, 0.22, 0.45, 0.15].map((delay, i) => (
+                    <span
+                      key={i}
+                      className="lab-eq-bar w-[2.5px] rounded-full"
+                      style={{
+                        height: `${10 + (i % 2) * 5}px`,
+                        backgroundColor: dynamicMoodHex,
+                        animationDelay: `${delay}s`,
+                      }}
+                    />
+                  ))}
                 </span>
+                <div className="leading-none">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
+                      AI Lab Online
+                    </span>
+                    <span className="hidden rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[9px] text-slate-400 sm:inline-block">
+                      WASM-FREE · LOCAL
+                    </span>
+                  </div>
+                  <div className="mt-1 hidden items-center gap-2 font-mono text-[10px] tracking-[0.12em] text-slate-400 sm:flex">
+                    <Radio className="h-3 w-3 text-accent-300" />
+                    <ScrambleText text={activeConfig.protocol} durationMs={460} />
+                    <span className="text-white/15">|</span>
+                    <span ref={coordRef} className="tabular-nums text-slate-400">
+                      VEC +0.00, +0.00
+                    </span>
+                  </div>
+                </div>
               </div>
-              <span className="text-white/20 text-xs hidden sm:inline-block">|</span>
-              <span className="font-mono text-[11px] text-slate-400 hidden sm:inline-block">
-                LangGraph v0.2 · 1024-d Vector Index · AST Guardrails
-              </span>
             </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-[#07090e]/80 border border-white/10 overflow-x-auto max-w-full">
-              <button
-                onClick={() => setActiveTab('rag')}
-                className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-md font-mono text-xs transition-all cursor-pointer ${
-                  activeTab === 'rag'
-                    ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/40 font-semibold shadow-[0_0_12px_rgba(52,211,153,0.2)]'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <ScanSearch className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Live RAG</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('copilot')}
-                className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-md font-mono text-xs transition-all cursor-pointer ${
-                  activeTab === 'copilot'
-                    ? 'bg-sky-500/20 text-sky-200 border border-sky-400/40 font-semibold shadow-[0_0_12px_rgba(56,189,248,0.2)]'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Bot className="w-3.5 h-3.5 text-sky-400" />
-                <span>Agent Copilot</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('pipeline')}
-                className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-md font-mono text-xs transition-all cursor-pointer ${
-                  activeTab === 'pipeline'
-                    ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-400/40 font-semibold shadow-[0_0_12px_rgba(129,140,248,0.2)]'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                <span>RAG & SQL Pipeline</span>
-              </button>
-              <button
-                data-guide="defense-tab"
-                onClick={() => setActiveTab('guardrails')}
-                className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-md font-mono text-xs transition-all cursor-pointer ${
-                  activeTab === 'guardrails'
-                    ? 'bg-pink-500/20 text-pink-200 border border-pink-400/40 font-semibold shadow-[0_0_12px_rgba(244,114,182,0.2)]'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-pink-400" />
-                <span>Defense Sandbox</span>
-              </button>
+            {/* 3D Magnetic Subsystem Switcher Dock */}
+            <div
+              role="tablist"
+              aria-label="AI Lab subsystems"
+              className="flex max-w-full items-center gap-1 overflow-x-auto rounded-xl border border-white/12 bg-deep/80 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+            >
+              {TAB_CONFIG.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <Magnetic3D key={tab.id} strength={0.12} tilt={4} className="shrink-0">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      data-guide={tab.guideAttr}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`slot-roll-trigger relative flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-mono text-xs transition-colors duration-300 ${
+                        isActive ? 'text-slate-50' : 'text-slate-400 hover:text-slate-100'
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.span
+                          layoutId="lab-active-tab"
+                          aria-hidden="true"
+                          transition={{ type: 'spring', stiffness: 390, damping: 30 }}
+                          className="absolute inset-0 rounded-lg border border-white/20 bg-white/[0.11] shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_6px_18px_-6px_rgba(244,182,120,0.4)]"
+                        >
+                          <span
+                            className="absolute -bottom-px left-1/2 h-[2px] w-7 -translate-x-1/2 rounded-full"
+                            style={{ backgroundColor: tab.accentHex, boxShadow: `0 0 10px ${tab.accentHex}` }}
+                          />
+                        </motion.span>
+                      )}
+                      <Icon className={`relative z-10 h-3.5 w-3.5 ${tab.iconColor}`} />
+                      <SlotRollText
+                        text={tab.label}
+                        active={isActive}
+                        className="relative z-10"
+                        accentClassName="text-accent-200"
+                      />
+                    </button>
+                  </Magnetic3D>
+                );
+              })}
             </div>
           </div>
 
-          {activeTab === 'rag' && <RetrievalLab seed={ragSeed} />}
-
-          {/* ════════════ TAB 1: AGENT COPILOT ════════════ */}
-          {activeTab === 'copilot' && (
-            <div className="p-5 md:p-7 flex flex-col gap-6">
-              {/* Question Chips */}
-              <div>
-                <p className="text-[11px] font-mono text-slate-400 uppercase tracking-widest mb-2.5">
-                  Select an AI Architecture Case Study:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { key: 'langgraph', label: '⚡ LangGraph Multi-Agent HRMS', color: 'border-sky-500/40 text-sky-300' },
-                    { key: 'rag_recall', label: '📈 0.48 → 0.81 RAG Recall Boost', color: 'border-indigo-500/40 text-indigo-300' },
-                    { key: 'guardrails', label: '🛡️ SQL Validation & Guardrails', color: 'border-emerald-500/40 text-emerald-300' },
-                    { key: 'why_hire', label: '🚀 Why Hire Koshal for AI Role?', color: 'border-amber-500/40 text-amber-300' },
-                  ].map((chip) => (
-                    <button
-                      key={chip.key}
-                      onClick={() => {
-                        setSelectedPreset(chip.key);
-                        runCopilotSimulation(chip.key);
-                      }}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-mono border transition-all text-left cursor-pointer ${
-                        selectedPreset === chip.key
-                          ? 'bg-white/[0.08] shadow-[0_0_15px_rgba(56,189,248,0.15)] ' + chip.color
-                          : 'bg-[#07090e]/60 border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200'
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Live Agent Reasoning Chain (Telemetry Box) */}
-              <div className="rounded-xl bg-[#07090e]/70 border border-white/[0.08] p-4 font-mono text-xs">
-                <div className="flex items-center justify-between text-slate-400 border-b border-white/5 pb-2.5 mb-2.5">
-                  <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-slate-300">
-                    <Terminal className="w-3.5 h-3.5 text-sky-400" />
-                    Agent Thought Chain & Vector Telemetry
-                  </span>
-                  {isSimulating ? (
-                    <span className="flex items-center gap-1.5 text-sky-300 text-[10px]">
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                      REASONING...
-                    </span>
-                  ) : (
-                    <span className="text-emerald-400 text-[10px] flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" /> GROUNDED
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2 min-h-[90px] justify-center">
-                  {(activePresetData?.thoughtSteps || []).map((step, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{
-                        opacity: visibleSteps > idx ? 1 : 0.2,
-                        x: visibleSteps > idx ? 0 : -4,
-                      }}
-                      transition={{ duration: 0.2 }}
-                      className={`flex items-start gap-2 text-[11px] ${
-                        visibleSteps > idx ? 'text-sky-300' : 'text-slate-600'
-                      }`}
-                    >
-                      <span className="text-slate-500 select-none">[{idx + 1}]</span>
-                      <span>{step}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Grounded Synthesis Display — Clean, Structured UI */}
-              <div className="rounded-xl bg-white/[0.015] border border-white/[0.08] p-5 md:p-6 flex flex-col gap-5">
-                {/* Header Strip */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-sky-400" />
-                    <span className="font-mono text-xs font-bold text-slate-100 uppercase tracking-wider">
-                      Grounded Architecture Synthesis
-                    </span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-950/40 border border-sky-400/30 text-[10px] font-mono text-sky-300">
-                    <Activity className="w-3 h-3 text-sky-400" />
-                    <span>Verified Production Implementation</span>
-                  </div>
-                </div>
-
-                <>
-                    {/* Executive Summary Card */}
-                    <div className="p-4 rounded-xl bg-sky-950/20 border border-sky-400/20">
-                      <div className="font-mono text-xs text-sky-300 font-semibold mb-1">
-                        {activePresetData.company} · <span className="text-slate-400 font-normal">{activePresetData.roleSubtitle}</span>
-                      </div>
-                      <p className="font-body text-sm md:text-[15px] text-slate-200 leading-relaxed">
-                        {activePresetData.summary}
-                      </p>
-                    </div>
-
-                    {/* Architecture Pillars Grid — Structured, Beautiful & Clean */}
-                    <div>
-                      <h4 className="font-mono text-[11px] uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1.5">
-                        <Cpu className="w-3.5 h-3.5 text-indigo-400" /> Core Engineering Highlights:
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {activePresetData.pillars.map((pillar, pIdx) => (
-                          <div
-                            key={pIdx}
-                            className="p-4 rounded-xl bg-[#07090e]/60 border border-white/[0.08] hover:border-white/20 transition-all flex flex-col justify-between gap-2"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-mono text-xs font-semibold text-slate-100">
-                                {pillar.title}
-                              </span>
-                              <span className="px-2 py-0.5 rounded bg-sky-500/10 border border-sky-400/20 text-[10px] font-mono text-sky-300 shrink-0">
-                                {pillar.tag}
-                              </span>
-                            </div>
-                            <p className="font-body text-xs text-slate-300 leading-relaxed">
-                              {pillar.description}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Production Metrics Strip */}
-                    <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {activePresetData.metrics.map((m) => (
-                        <div
-                          key={m.label}
-                          className="rounded-xl bg-[#07090e]/70 border border-white/[0.08] p-3 text-center"
-                        >
-                          <div className="font-mono text-[10px] uppercase text-slate-400 tracking-wider">
-                            {m.label}
-                          </div>
-                          <div className="font-mono text-base font-bold text-sky-300 mt-1">
-                            {m.value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                </>
-              </div>
-
-              {/* Freeform Prompt Input */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!inputQuery.trim()) return;
-                  askRag(inputQuery);
-                  setInputQuery('');
-                }}
-                className="flex items-center gap-2 pt-1"
+          {/* Cinematic 3D Subsystem Viewport */}
+          <AnimatePresence mode="wait">
+            {activeTab === 'rag' && (
+              <motion.div
+                key="tab-rag"
+                initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12, rotateX: -3 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, y: -10, rotateX: 3 }}
+                transition={{ duration: 0.34, ease: EASE }}
               >
-                <input
-                  type="text"
-                  value={inputQuery}
-                  onChange={(e) => setInputQuery(e.target.value)}
-                  placeholder="Ask your own question: it runs on the live retrieval engine…"
-                  className="flex-1 rounded-xl bg-[#07090e]/70 border border-white/10 px-4 py-3 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400/60 font-body transition-colors"
-                />
-                <button
-                  type="submit"
-                  disabled={isSimulating}
-                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-medium text-xs md:text-sm flex items-center gap-2 hover:opacity-95 transition-opacity disabled:opacity-50 cursor-pointer shadow-[0_0_15px_rgba(56,189,248,0.2)]"
-                >
-                  <Send className="w-4 h-4" />
-                  <span className="hidden sm:inline">Ask AI</span>
-                </button>
-              </form>
-            </div>
-          )}
+                <RetrievalLab seed={ragSeed} />
+              </motion.div>
+            )}
 
-          {/* ════════════ TAB 2: RAG & SQL PIPELINE SIMULATOR ════════════ */}
-          {activeTab === 'pipeline' && (
-            <div className="p-5 md:p-7 flex flex-col gap-6">
-              <div>
-                <p className="text-[11px] font-mono text-slate-400 uppercase tracking-widest mb-2.5">
-                  Test Koshal's 4-Stage Enterprise NL-to-SQL & Schema Validation Engine:
-                </p>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {[
-                    'Show me departments where average salary increased by >15% in Q3',
-                    'List total S3 compression cost savings achieved across 10,000 files in Q1',
-                    'Find candidates matching PyTorch + LangGraph with >2 years experience',
-                  ].map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => setPipelineQuery(q)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-mono border text-left transition-all cursor-pointer ${
-                        pipelineQuery === q
-                          ? 'bg-indigo-950/40 border-indigo-400/50 text-indigo-200 shadow-[0_0_12px_rgba(129,140,248,0.15)]'
-                          : 'bg-[#07090e]/60 border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200'
-                      }`}
-                    >
-                      "{q}"
-                    </button>
-                  ))}
+            {/* ════════════ TAB 1: AGENT COPILOT ════════════ */}
+            {activeTab === 'copilot' && (
+              <motion.div
+                key="tab-copilot"
+                initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12, rotateX: -3 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, y: -10, rotateX: 3 }}
+                transition={{ duration: 0.34, ease: EASE }}
+                className="flex flex-col gap-6 p-5 md:p-7"
+              >
+                {/* Live 3D LangGraph Multi-Agent Orbital Topology */}
+                <SafeBoundary>
+                  <Suspense fallback={<div className="h-56 w-full animate-pulse rounded-2xl bg-deep/60 md:h-64" />}>
+                    <LabHoloStage
+                      mode="copilot"
+                      copilotStep={visibleSteps}
+                      copilotPillar={hoveredPillar}
+                      reducedMotion={!!reduce}
+                    />
+                  </Suspense>
+                </SafeBoundary>
+
+                {/* Question Chips */}
+                <div>
+                  <p className="mb-2.5 font-mono text-[11px] uppercase tracking-widest text-slate-400">
+                    Select an AI Architecture Case Study (hover pillars to pulse 3D nodes):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: 'langgraph', label: 'LangGraph Multi-Agent HRMS' },
+                      { key: 'rag_recall', label: '0.48 → 0.81 RAG Recall Boost' },
+                      { key: 'guardrails', label: 'SQL Validation & Guardrails' },
+                      { key: 'why_hire', label: 'Why Hire Koshal for AI Role?' },
+                    ].map((chip) => (
+                      <motion.button
+                        key={chip.key}
+                        type="button"
+                        whileHover={reduce ? undefined : { y: -1.5 }}
+                        whileTap={reduce ? undefined : { scale: 0.97 }}
+                        onClick={() => {
+                          setSelectedPreset(chip.key);
+                          runCopilotSimulation(chip.key);
+                        }}
+                        className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-left font-mono text-xs transition-all duration-300 ${
+                          selectedPreset === chip.key
+                            ? 'border-accent-300/55 bg-accent-400/15 text-accent-100 shadow-[0_0_20px_-6px_rgba(244,182,120,0.5)]'
+                            : 'border-white/10 bg-deep/60 text-slate-400 hover:border-white/25 hover:text-slate-100'
+                        }`}
+                      >
+                        {chip.label}
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={pipelineQuery}
-                    onChange={(e) => setPipelineQuery(e.target.value)}
-                    className="flex-1 rounded-xl bg-[#07090e]/70 border border-white/10 px-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400/60 font-mono"
-                  />
-                  <button
-                    onClick={handleRunPipeline}
-                    disabled={isPipelineRunning}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 text-white font-mono text-xs font-semibold hover:opacity-95 transition-opacity flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-[0_0_15px_rgba(129,140,248,0.2)]"
-                  >
-                    {isPipelineRunning ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                {/* Live Agent Reasoning Chain (Telemetry Box) */}
+                <div className="rounded-2xl border border-white/[0.09] bg-deep/75 p-4 font-mono text-xs">
+                  <div className="mb-2.5 flex items-center justify-between border-b border-white/[0.06] pb-2.5 text-slate-400">
+                    <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-slate-200">
+                      <Terminal className="h-3.5 w-3.5 text-accent-400" />
+                      Agent Thought Chain & Vector Telemetry
+                    </span>
+                    {isSimulating ? (
+                      <span className="flex items-center gap-1.5 text-[10px] text-accent-300">
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        REASONING...
+                      </span>
                     ) : (
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+                        <CheckCircle className="h-3 w-3" /> GROUNDED
+                      </span>
                     )}
-                    <span>Run Pipeline</span>
-                  </button>
-                </div>
-              </div>
+                  </div>
 
-              {/* 4 Pipeline Stages Visualization */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                {[
-                  {
-                    num: '01',
-                    title: 'Query Expansion & Intent',
-                    desc: 'Extract entities & analytical dimension',
-                    badge: pipelineStep >= 1 ? 'Extracted' : 'Idle',
-                    statusColor: pipelineStep >= 1 ? 'text-sky-300 border-sky-400/30 bg-sky-500/10' : 'text-slate-500 border-white/5',
-                    detail: 'Entities: [Department, Salary, Quarter]\nIntent: Aggregation + Threshold',
-                  },
-                  {
-                    num: '02',
-                    title: 'Schema Recall (FAISS)',
-                    desc: 'Boosted recall: 0.48 -> 0.81',
-                    badge: pipelineStep >= 2 ? 'Matched 0.81' : 'Pending',
-                    statusColor: pipelineStep >= 2 ? 'text-indigo-300 border-indigo-400/30 bg-indigo-500/10' : 'text-slate-500 border-white/5',
-                    detail: 'Tables: [dept_payroll, compensation]\nCols: [base_salary, hike_pct]',
-                  },
-                  {
-                    num: '03',
-                    title: 'SQLGlot AST Guardrail',
-                    desc: 'Syntax, semantics, read-only check',
-                    badge: pipelineStep >= 3 ? 'AST Validated' : 'Pending',
-                    statusColor: pipelineStep >= 3 ? 'text-emerald-300 border-emerald-400/30 bg-emerald-500/10' : 'text-slate-500 border-white/5',
-                    detail: 'Operation: SELECT only\nRBAC: Tenant Partition Injected',
-                  },
-                  {
-                    num: '04',
-                    title: 'Execution & Synthesis',
-                    desc: 'Optimized query plan dispatched',
-                    badge: pipelineStep >= 4 ? '18ms Latency' : 'Pending',
-                    statusColor: pipelineStep >= 4 ? 'text-amber-300 border-amber-400/30 bg-amber-500/10' : 'text-slate-500 border-white/5',
-                    detail: 'Rows: 12 returned\nSecurity: 0 PII leaks detected',
-                  },
-                ].map((st, i) => (
-                  <div
-                    key={st.num}
-                    className={`rounded-xl p-4 border transition-all ${
-                      pipelineStep >= i + 1
-                        ? 'bg-white/[0.03] border-white/20 shadow-lg'
-                        : 'bg-[#07090e]/60 border-white/[0.06] opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-[10px] text-slate-500">{st.num}</span>
-                      <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full border ${st.statusColor}`}>
-                        {st.badge}
+                  <div className="flex min-h-[92px] flex-col justify-center gap-2">
+                    {(activePresetData?.thoughtSteps || []).map((step, idx) => (
+                      <motion.div
+                        key={`${selectedPreset}-${idx}`}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{
+                          opacity: visibleSteps > idx ? 1 : 0.2,
+                          x: visibleSteps > idx ? 0 : -5,
+                        }}
+                        transition={{ duration: 0.24, ease: EASE }}
+                        className={`flex items-start gap-2.5 text-[11px] ${
+                          visibleSteps > idx ? 'text-accent-200' : 'text-slate-600'
+                        }`}
+                      >
+                        <span
+                          className={`select-none font-semibold ${
+                            visibleSteps > idx ? 'text-accent-400' : 'text-slate-600'
+                          }`}
+                        >
+                          [{idx + 1}]
+                        </span>
+                        <span>{step}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Grounded Synthesis Display */}
+                <div className="flex flex-col gap-5 rounded-2xl border border-white/[0.09] bg-white/[0.02] p-5 md:p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-accent-400" />
+                      <span className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-100">
+                        Grounded Architecture Synthesis
                       </span>
                     </div>
-                    <h4 className="font-mono text-xs font-semibold text-slate-100 mb-1">{st.title}</h4>
-                    <p className="text-[11px] text-slate-400 mb-3">{st.desc}</p>
-                    <div className="rounded bg-[#04060a] p-2.5 font-mono text-[10px] text-slate-300 whitespace-pre-line border border-white/5">
-                      {pipelineStep >= i + 1 ? st.detail : '// Waiting for trigger...'}
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-accent-400/35 bg-accent-300/10 px-2.5 py-0.5 font-mono text-[10px] text-accent-200">
+                      <Activity className="h-3 w-3 text-accent-400" />
+                      <span>Verified Production Implementation</span>
                     </div>
                   </div>
-                ))}
-              </div>
 
-              {/* Output SQL Code Window */}
-              {pipelineStep >= 3 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-xl bg-[#07090e]/80 border border-white/[0.08] p-4 font-mono text-xs"
-                >
-                  <div className="flex items-center justify-between text-slate-400 mb-2 border-b border-white/5 pb-2">
-                    <span className="flex items-center gap-2 text-sky-300">
-                      <Code2 className="w-3.5 h-3.5" /> Generated Optimized PostgreSQL AST
-                    </span>
-                    <span className="text-emerald-400 text-[10px] font-mono">Read-Only / RBAC Partitioned</span>
+                  {/* Executive Summary Card */}
+                  <div className="rounded-xl border border-accent-400/25 bg-gradient-to-br from-accent-300/12 via-accent-400/5 to-transparent p-4">
+                    <ExtrudedHeading
+                      text={activePresetData.company}
+                      as="h3"
+                      className="font-display text-lg font-medium tracking-tight text-slate-100"
+                    />
+                    <div className="mb-2 mt-0.5 font-mono text-[11px] text-accent-300/90">
+                      {activePresetData.roleSubtitle}
+                    </div>
+                    <p className="font-body text-sm leading-relaxed text-slate-200 md:text-[15px]">
+                      {activePresetData.summary}
+                    </p>
                   </div>
-                  <pre className="text-sky-200/90 overflow-x-auto text-[11px] leading-relaxed">
+
+                  {/* Architecture Pillars Grid — 3D Tilt & Linked to 3D Agent Nodes */}
+                  <div>
+                    <h4 className="mb-3 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-slate-400">
+                      <Cpu className="h-3.5 w-3.5 text-indigo-400" /> Core Engineering Highlights:
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {activePresetData.pillars.map((pillar, pIdx) => (
+                        <motion.div
+                          key={`${selectedPreset}-${pIdx}`}
+                          initial={reduce ? undefined : { opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: pIdx * 0.06, duration: 0.45, ease: EASE }}
+                          onPointerEnter={() => setHoveredPillar(pIdx)}
+                          onPointerMove={reduce ? undefined : cardTilt}
+                          onPointerLeave={(e) => {
+                            setHoveredPillar(null);
+                            cardUntilt(e);
+                          }}
+                          style={
+                            reduce
+                              ? undefined
+                              : {
+                                  transform: 'perspective(900px) rotateX(var(--lx, 0deg)) rotateY(var(--ly, 0deg))',
+                                  transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1), border-color 0.25s',
+                                }
+                          }
+                          className="spotlight flex flex-col justify-between gap-2 rounded-xl border border-white/[0.09] bg-deep/65 p-4 hover:border-accent-300/40"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-mono text-xs font-semibold text-slate-100">
+                              {pillar.title}
+                            </span>
+                            <span className="shrink-0 rounded border border-accent-400/25 bg-accent-500/12 px-2 py-0.5 font-mono text-[10px] text-accent-200">
+                              {pillar.tag}
+                            </span>
+                          </div>
+                          <p className="font-body text-xs leading-relaxed text-slate-300">
+                            {pillar.description}
+                          </p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Production Metrics Strip */}
+                  <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-3">
+                    {activePresetData.metrics.map((m) => (
+                      <div
+                        key={m.label}
+                        className="spotlight rounded-xl border border-white/[0.09] bg-deep/75 p-3.5 text-center"
+                      >
+                        <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
+                          {m.label}
+                        </div>
+                        <div className="text-shader-gold mt-1 font-mono text-base font-semibold">
+                          {m.value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Freeform Prompt Input */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!inputQuery.trim()) return;
+                    askRag(inputQuery);
+                    setInputQuery('');
+                  }}
+                  className="flex items-center gap-2.5 pt-1"
+                >
+                  <input
+                    type="text"
+                    value={inputQuery}
+                    onChange={(e) => setInputQuery(e.target.value)}
+                    placeholder="Ask your own question: it runs on the live retrieval engine…"
+                    className="flex-1 rounded-xl border border-white/15 bg-deep/75 px-4 py-3 font-body text-xs text-slate-100 placeholder-slate-500 transition-colors focus:border-accent-400/60 focus:outline-none md:text-sm"
+                  />
+                  <Magnetic3D strength={0.18} tilt={5}>
+                    <button
+                      type="submit"
+                      disabled={isSimulating}
+                      className="slot-roll-trigger btn btn-primary !rounded-xl !px-5 !py-3 text-xs disabled:opacity-50 md:text-sm"
+                    >
+                      <Send className="h-4 w-4" />
+                      <SlotRollText text="Ask AI" className="hidden sm:inline-flex" accentClassName="text-deep" />
+                    </button>
+                  </Magnetic3D>
+                </form>
+              </motion.div>
+            )}
+
+            {/* ════════════ TAB 2: RAG & SQL PIPELINE SIMULATOR ════════════ */}
+            {activeTab === 'pipeline' && (
+              <motion.div
+                key="tab-pipeline"
+                initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12, rotateX: -3 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, y: -10, rotateX: 3 }}
+                transition={{ duration: 0.34, ease: EASE }}
+                className="flex flex-col gap-6 p-5 md:p-7"
+              >
+                {/* Live 3D 4-Stage Holographic Pipeline Tunnel */}
+                <SafeBoundary>
+                  <Suspense fallback={<div className="h-56 w-full animate-pulse rounded-2xl bg-deep/60 md:h-64" />}>
+                    <LabHoloStage mode="pipeline" pipelineStep={pipelineStep} reducedMotion={!!reduce} />
+                  </Suspense>
+                </SafeBoundary>
+
+                <div>
+                  <p className="mb-2.5 font-mono text-[11px] uppercase tracking-widest text-slate-400">
+                    Test Koshal's 4-Stage Enterprise NL-to-SQL & Schema Validation Engine:
+                  </p>
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {[
+                      'Show me departments where average salary increased by >15% in Q3',
+                      'List total S3 compression cost savings achieved across 10,000 files in Q1',
+                      'Find candidates matching PyTorch + LangGraph with >2 years experience',
+                    ].map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setPipelineQuery(q)}
+                        className={`cursor-pointer rounded-lg border px-3 py-1.5 text-left font-mono text-xs transition-all duration-300 ${
+                          pipelineQuery === q
+                            ? 'border-indigo-400/55 bg-indigo-400/15 text-indigo-100 shadow-[0_0_18px_-6px_rgba(165,180,252,0.5)]'
+                            : 'border-white/10 bg-deep/60 text-slate-400 hover:border-white/25 hover:text-slate-100'
+                        }`}
+                      >
+                        "{q}"
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      value={pipelineQuery}
+                      onChange={(e) => setPipelineQuery(e.target.value)}
+                      className="flex-1 rounded-xl border border-white/15 bg-deep/75 px-4 py-3 font-mono text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-400/60 focus:outline-none"
+                    />
+                    <Magnetic3D strength={0.18} tilt={5}>
+                      <button
+                        type="button"
+                        onClick={handleRunPipeline}
+                        disabled={isPipelineRunning}
+                        className="slot-roll-trigger btn btn-primary !rounded-xl !px-5 !py-3 font-mono text-xs disabled:opacity-50"
+                      >
+                        {isPipelineRunning ? (
+                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        )}
+                        <SlotRollText text="Run Pipeline" accentClassName="text-deep" />
+                      </button>
+                    </Magnetic3D>
+                  </div>
+                </div>
+
+                {/* 4 Pipeline Stages Visualization with 3D Tilt Cards */}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                  {[
+                    {
+                      num: '01',
+                      title: 'Query Expansion & Intent',
+                      desc: 'Extract entities & analytical dimension',
+                      badge: pipelineStep >= 1 ? 'Extracted' : 'Idle',
+                      statusColor:
+                        pipelineStep >= 1
+                          ? 'border-accent-400/40 bg-accent-500/15 text-accent-200'
+                          : 'border-white/10 text-slate-500',
+                      detail: 'Entities: [Department, Salary, Quarter]\nIntent: Aggregation + Threshold',
+                    },
+                    {
+                      num: '02',
+                      title: 'Schema Recall (FAISS)',
+                      desc: 'Boosted recall: 0.48 -> 0.81',
+                      badge: pipelineStep >= 2 ? 'Matched 0.81' : 'Pending',
+                      statusColor:
+                        pipelineStep >= 2
+                          ? 'border-indigo-400/40 bg-indigo-500/15 text-indigo-200'
+                          : 'border-white/10 text-slate-500',
+                      detail: 'Tables: [dept_payroll, compensation]\nCols: [base_salary, hike_pct]',
+                    },
+                    {
+                      num: '03',
+                      title: 'SQLGlot AST Guardrail',
+                      desc: 'Syntax, semantics, read-only check',
+                      badge: pipelineStep >= 3 ? 'AST Validated' : 'Pending',
+                      statusColor:
+                        pipelineStep >= 3
+                          ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-200'
+                          : 'border-white/10 text-slate-500',
+                      detail: 'Operation: SELECT only\nRBAC: Tenant Partition Injected',
+                    },
+                    {
+                      num: '04',
+                      title: 'Execution & Synthesis',
+                      desc: 'Optimized query plan dispatched',
+                      badge: pipelineStep >= 4 ? '18ms Latency' : 'Pending',
+                      statusColor:
+                        pipelineStep >= 4
+                          ? 'border-amber-400/40 bg-amber-500/15 text-amber-200'
+                          : 'border-white/10 text-slate-500',
+                      detail: 'Rows: 12 returned\nSecurity: 0 PII leaks detected',
+                    },
+                  ].map((st, i) => {
+                    const active = pipelineStep >= i + 1;
+                    return (
+                      <motion.div
+                        key={st.num}
+                        animate={{
+                          opacity: active ? 1 : 0.62,
+                          scale: active ? 1 : 0.98,
+                        }}
+                        transition={{ duration: 0.35, ease: EASE }}
+                        onPointerMove={reduce ? undefined : cardTilt}
+                        onPointerLeave={cardUntilt}
+                        style={
+                          reduce
+                            ? undefined
+                            : {
+                                transform: 'perspective(900px) rotateX(var(--lx, 0deg)) rotateY(var(--ly, 0deg))',
+                                transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1)',
+                              }
+                        }
+                        className={`spotlight relative rounded-xl border p-4 transition-colors duration-300 ${
+                          active
+                            ? 'border-white/25 bg-white/[0.05] shadow-[0_14px_30px_-14px_rgba(165,180,252,0.35)]'
+                            : 'border-white/[0.07] bg-deep/60'
+                        }`}
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="font-mono text-[10px] font-semibold text-accent-300/80">{st.num}</span>
+                          <span className={`rounded-full border px-2 py-0.5 font-mono text-[10px] ${st.statusColor}`}>
+                            {st.badge}
+                          </span>
+                        </div>
+                        <h4 className="mb-1 font-mono text-xs font-semibold text-slate-100">{st.title}</h4>
+                        <p className="mb-3 text-[11px] text-slate-400">{st.desc}</p>
+                        <div className="whitespace-pre-line rounded-lg border border-white/[0.07] bg-deep/80 p-2.5 font-mono text-[10px] text-slate-300">
+                          {active ? st.detail : '// Waiting for trigger...'}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Output SQL Code Window */}
+                {pipelineStep >= 3 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45, ease: EASE }}
+                    className="rounded-2xl border border-emerald-400/20 bg-deep/85 p-4 font-mono text-xs"
+                  >
+                    <div className="mb-2.5 flex items-center justify-between border-b border-white/[0.07] pb-2 text-slate-400">
+                      <span className="flex items-center gap-2 text-accent-300">
+                        <Code2 className="h-3.5 w-3.5" /> Generated Optimized PostgreSQL AST
+                      </span>
+                      <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-300">
+                        Read-Only / RBAC Partitioned
+                      </span>
+                    </div>
+                    <pre className="overflow-x-auto text-[11px] leading-relaxed text-accent-200/90">
 {`SELECT 
     d.department_name,
     ROUND(AVG(c.hike_percentage), 2) AS avg_hike_pct,
@@ -696,168 +1013,238 @@ WHERE c.quarter = 'Q3'
 GROUP BY d.department_name
 HAVING AVG(c.hike_percentage) > 15.0
 ORDER BY avg_hike_pct DESC;`}
-                  </pre>
-                </motion.div>
-              )}
-            </div>
-          )}
-
-          {/* ════════════ TAB 3: PROMPT INJECTION & DEFENSE SANDBOX (live rules) ════════════ */}
-          {activeTab === 'guardrails' && (
-            <div className="p-5 md:p-7 flex flex-col gap-5">
-              <div>
-                <p className="text-[11px] font-mono text-slate-400 uppercase tracking-widest mb-2.5">
-                  Adversarial test bench: pick a vector or write your own. Every verdict is computed live.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {ATTACKS.map((atk) => (
-                    <button
-                      key={atk.title}
-                      onClick={() => runGuard(atk.payload)}
-                      className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                        guardInput === atk.payload
-                          ? atk.safe
-                            ? 'bg-emerald-950/30 border-emerald-400/50'
-                            : 'bg-rose-950/30 border-rose-400/50 shadow-[0_0_12px_rgba(244,114,182,0.15)]'
-                          : 'bg-[#07090e]/60 border-white/10 hover:border-white/20 text-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className={`font-mono text-xs font-semibold ${atk.safe ? 'text-emerald-300' : 'text-rose-300'}`}>
-                          {atk.title}
-                        </span>
-                        {atk.safe ? (
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                        ) : (
-                          <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
-                        )}
-                      </div>
-                      <p className="font-mono text-[10px] text-slate-300 line-clamp-2">"{atk.payload}"</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  runGuard(guardInput);
-                }}
-                className="flex flex-col sm:flex-row gap-2"
-              >
-                <label htmlFor="guard-input" className="sr-only">
-                  Payload to inspect
-                </label>
-                <textarea
-                  id="guard-input"
-                  rows={2}
-                  maxLength={2000}
-                  value={guardInput}
-                  onChange={(e) => setGuardInput(e.target.value)}
-                  placeholder="Paste a jailbreak, an SQL injection, or a perfectly normal question…"
-                  className="flex-1 rounded-xl bg-[#07090e]/70 border border-white/10 px-4 py-3 font-mono text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-pink-400/60 resize-none"
-                />
-                <button
-                  type="submit"
-                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-indigo-500 text-white font-medium text-sm flex items-center justify-center gap-2 hover:opacity-95 transition-opacity cursor-pointer"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  Inspect
-                </button>
-              </form>
-
-              <div
-                className="rounded-xl bg-[#07090e]/70 border border-white/[0.08] p-4 font-mono text-xs flex flex-col gap-3"
-                aria-live="polite"
-              >
-                <div className="flex items-center justify-between border-b border-white/5 pb-2 text-slate-400">
-                  <span className="flex items-center gap-2 text-rose-400 text-[11px] uppercase tracking-wider">
-                    <Lock className="w-3.5 h-3.5" />
-                    Guardrail audit log
-                  </span>
-                  {verdict && (
-                    <span className="text-[10px] text-slate-400">
-                      evaluated in {verdict.ms < 0.1 ? '<0.1' : verdict.ms.toFixed(1)} ms
-                    </span>
-                  )}
-                </div>
-
-                {!verdict ? (
-                  <div className="py-6 text-center text-slate-500 text-[11px]">
-                    Select an attack vector above or type your own payload.
-                  </div>
-                ) : (
-                  <motion.div
-                    key={guardInput}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col gap-2.5 text-[11px]"
-                  >
-                    <div
-                      className={`p-3.5 rounded-lg border flex items-start gap-3 ${
-                        verdict.blocked
-                          ? 'bg-rose-950/40 border-rose-400/40 text-rose-200'
-                          : 'bg-emerald-950/30 border-emerald-400/30 text-emerald-200'
-                      }`}
-                    >
-                      {verdict.blocked ? (
-                        <AlertOctagon className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                      ) : (
-                        <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                      )}
-                      <div>
-                        <div className="font-bold uppercase tracking-wide">
-                          {verdict.blocked
-                            ? 'Blocked before reaching the model'
-                            : verdict.findings.length
-                              ? 'Allowed with warnings'
-                              : 'Allowed'}
-                        </div>
-                        <div className="text-slate-200 mt-1 font-body text-xs leading-relaxed">
-                          {verdict.findings.length
-                            ? `${verdict.findings.length} rule${verdict.findings.length > 1 ? 's' : ''} fired · noisy-OR risk ${verdict.risk.toFixed(2)} (block ≥ 0.50)`
-                            : 'No injection, exfiltration or destructive-SQL signals detected.'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {verdict.findings.length > 0 && (
-                      <ul className="flex flex-col gap-1.5">
-                        {verdict.findings.map((f) => (
-                          <li
-                            key={f.rule}
-                            className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 rounded-lg bg-[#04060a] border border-white/[0.08]"
-                          >
-                            <span className="text-rose-300 font-semibold">{f.label}</span>
-                            <span className="text-slate-500">w {f.weight.toFixed(1)}</span>
-                            <code className="text-amber-200/90 break-all">{f.match}</code>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {verdict.rewrittenSql && (
-                      <div className="px-3 py-2.5 rounded-lg bg-[#04060a] border border-emerald-400/20">
-                        <span className="text-slate-400 text-[10px] block mb-1 uppercase tracking-wider">
-                          Rewritten for execution · tenant isolation + row ceiling
-                        </span>
-                        <code className="text-emerald-300 break-all">{verdict.rewrittenSql}</code>
-                      </div>
-                    )}
+                    </pre>
                   </motion.div>
                 )}
+              </motion.div>
+            )}
 
-                <p className="text-[10px] text-slate-500 leading-relaxed">
-                  Live rules: instruction override, secret exfiltration, role hijack, chat-template delimiters, PII
-                  exfiltration, encoded payloads. SQL: literal breakout, comments, stacked queries, destructive keywords,
-                  UNION, tautologies. The production version validates a full SQLGlot AST; this in-browser port is
-                  token-level.
-                </p>
-              </div>
-            </div>
-          )}
+            {/* ════════════ TAB 3: PROMPT INJECTION & DEFENSE SANDBOX ════════════ */}
+            {activeTab === 'guardrails' && (
+              <motion.div
+                key="tab-guardrails"
+                initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12, rotateX: -3 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, y: -10, rotateX: 3 }}
+                transition={{ duration: 0.34, ease: EASE }}
+                className="flex flex-col gap-5 p-5 md:p-7"
+              >
+                {/* Live 3D Geodesic Containment Dome & Threat Radar */}
+                <SafeBoundary>
+                  <Suspense fallback={<div className="h-56 w-full animate-pulse rounded-2xl bg-deep/60 md:h-64" />}>
+                    <LabHoloStage
+                      mode="guardrails"
+                      guardVerdict={
+                        verdict
+                          ? { blocked: verdict.blocked, risk: verdict.risk, findingsCount: verdict.findings.length }
+                          : null
+                      }
+                      pulseNonce={guardNonce}
+                      reducedMotion={!!reduce}
+                    />
+                  </Suspense>
+                </SafeBoundary>
+
+                <div>
+                  <p className="mb-2.5 font-mono text-[11px] uppercase tracking-widest text-slate-400">
+                    Adversarial test bench: launch a vector or craft your own. Every verdict fires live against the 3D shield.
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {ATTACKS.map((atk) => (
+                      <button
+                        key={atk.title}
+                        type="button"
+                        onClick={() => runGuard(atk.payload)}
+                        onPointerMove={reduce ? undefined : cardTilt}
+                        onPointerLeave={cardUntilt}
+                        style={
+                          reduce
+                            ? undefined
+                            : {
+                                transform: 'perspective(900px) rotateX(var(--lx, 0deg)) rotateY(var(--ly, 0deg))',
+                                transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1), border-color 0.25s',
+                              }
+                        }
+                        className={`spotlight cursor-pointer rounded-xl border p-3.5 text-left transition-colors ${
+                          guardInput === atk.payload
+                            ? atk.safe
+                              ? 'border-emerald-400/60 bg-emerald-400/12 shadow-[0_12px_28px_-14px_rgba(52,211,153,0.45)]'
+                              : 'border-rose-400/60 bg-rose-400/12 shadow-[0_12px_28px_-14px_rgba(251,113,133,0.45)]'
+                            : 'border-white/10 bg-deep/65 text-slate-400 hover:border-white/25'
+                        }`}
+                      >
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <span
+                            className={`font-mono text-xs font-semibold ${
+                              atk.safe ? 'text-emerald-300' : 'text-rose-300'
+                            }`}
+                          >
+                            {atk.title}
+                          </span>
+                          {atk.safe ? (
+                            <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                          ) : (
+                            <AlertOctagon className="h-3.5 w-3.5 text-rose-400" />
+                          )}
+                        </div>
+                        <p className="line-clamp-2 font-mono text-[10px] text-slate-300">"{atk.payload}"</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    runGuard(guardInput);
+                  }}
+                  className="flex flex-col gap-2.5 sm:flex-row"
+                >
+                  <label htmlFor="guard-input" className="sr-only">
+                    Payload to inspect
+                  </label>
+                  <textarea
+                    id="guard-input"
+                    rows={2}
+                    maxLength={2000}
+                    value={guardInput}
+                    onChange={(e) => setGuardInput(e.target.value)}
+                    placeholder="Paste a jailbreak, an SQL injection, or a perfectly normal question…"
+                    className="flex-1 resize-none rounded-xl border border-white/15 bg-deep/75 px-4 py-3 font-mono text-xs text-slate-100 placeholder-slate-500 focus:border-pink-400/60 focus:outline-none"
+                  />
+                  <Magnetic3D strength={0.18} tilt={5}>
+                    <button
+                      type="submit"
+                      className="slot-roll-trigger btn btn-primary !rounded-xl !px-5 !py-3 text-sm"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      <SlotRollText text="Inspect" accentClassName="text-deep" />
+                    </button>
+                  </Magnetic3D>
+                </form>
+
+                {/* Audit Log + Live Risk Meter */}
+                <div
+                  className="flex flex-col gap-3 rounded-2xl border border-white/[0.09] bg-deep/75 p-4 font-mono text-xs"
+                  aria-live="polite"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-2.5 text-slate-400">
+                    <span className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-rose-400">
+                      <Lock className="h-3.5 w-3.5" />
+                      Guardrail audit log
+                    </span>
+                    {verdict && (
+                      <span className="text-[10px] tabular-nums text-slate-400">
+                        evaluated in {verdict.ms < 0.1 ? '<0.1' : verdict.ms.toFixed(1)} ms
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Live Noisy-OR Risk Meter */}
+                  {verdict && (
+                    <div className="rounded-xl border border-white/[0.07] bg-deep/80 px-3.5 py-2.5">
+                      <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider">
+                        <span className="text-slate-400">Noisy-OR Threat Score</span>
+                        <span className={verdict.blocked ? 'font-semibold text-rose-300' : 'font-semibold text-emerald-300'}>
+                          {(verdict.risk * 100).toFixed(0)}% · threshold 50%
+                        </span>
+                      </div>
+                      <div className="relative h-2 overflow-hidden rounded-full bg-white/[0.07]">
+                        {/* 50% threshold marker */}
+                        <span aria-hidden="true" className="absolute inset-y-0 left-1/2 z-10 w-px bg-white/45" />
+                        <motion.div
+                          key={guardNonce}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, verdict.risk * 100)}%` }}
+                          transition={{ duration: 0.55, ease: EASE }}
+                          className={`h-full rounded-full ${
+                            verdict.blocked
+                              ? 'bg-gradient-to-r from-amber-400 via-rose-400 to-rose-300 shadow-[0_0_12px_rgba(251,113,133,0.8)]'
+                              : 'bg-gradient-to-r from-emerald-500 to-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.7)]'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {!verdict ? (
+                    <div className="py-5 text-center text-[11px] text-slate-500">
+                      Select an attack vector above or type your own payload.
+                    </div>
+                  ) : (
+                    <motion.div
+                      key={`${guardInput}-${guardNonce}`}
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3, ease: EASE }}
+                      className="flex flex-col gap-2.5 text-[11px]"
+                    >
+                      <div
+                        className={`flex items-start gap-3 rounded-xl border p-3.5 ${
+                          verdict.blocked
+                            ? 'border-rose-400/45 bg-rose-400/10 text-rose-200'
+                            : 'border-emerald-400/35 bg-emerald-400/10 text-emerald-200'
+                        }`}
+                      >
+                        {verdict.blocked ? (
+                          <AlertOctagon className="mt-0.5 h-5 w-5 shrink-0 text-rose-400" />
+                        ) : (
+                          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+                        )}
+                        <div>
+                          <div className="font-semibold uppercase tracking-wide">
+                            {verdict.blocked
+                              ? 'Blocked before reaching the model'
+                              : verdict.findings.length
+                                ? 'Allowed with warnings'
+                                : 'Allowed'}
+                          </div>
+                          <div className="mt-1 font-body text-xs leading-relaxed text-slate-200">
+                            {verdict.findings.length
+                              ? `${verdict.findings.length} rule${verdict.findings.length > 1 ? 's' : ''} fired · noisy-OR risk ${verdict.risk.toFixed(2)} (block ≥ 0.50)`
+                              : 'No injection, exfiltration or destructive-SQL signals detected.'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {verdict.findings.length > 0 && (
+                        <ul className="flex flex-col gap-1.5">
+                          {verdict.findings.map((f) => (
+                            <li
+                              key={f.rule}
+                              className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-white/[0.08] bg-deep/85 px-3 py-2"
+                            >
+                              <span className="font-semibold text-rose-300">{f.label}</span>
+                              <span className="text-slate-500">w {f.weight.toFixed(1)}</span>
+                              <code className="break-all text-amber-200/90">{f.match}</code>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {verdict.rewrittenSql && (
+                        <div className="rounded-lg border border-emerald-400/25 bg-deep/85 px-3 py-2.5">
+                          <span className="mb-1 block text-[10px] uppercase tracking-wider text-slate-400">
+                            Rewritten for execution · tenant isolation + row ceiling
+                          </span>
+                          <code className="break-all text-emerald-300">{verdict.rewrittenSql}</code>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  <p className="text-[10px] leading-relaxed text-slate-500">
+                    Live rules: instruction override, secret exfiltration, role hijack, chat-template delimiters, PII
+                    exfiltration, encoded payloads. SQL: literal breakout, comments, stacked queries, destructive keywords,
+                    UNION, tautologies. The production version validates a full SQLGlot AST; this in-browser port is
+                    token-level.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -8,8 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
-    "check:retrieval": "node scripts/retrieval.check.ts",
-    "voice": "node scripts/voice-lines.ts | ${TTS_PYTHON:-.venv-tts/bin/python} scripts/voice.py",
+    "check:retrieval": "node --experimental-strip-types --no-warnings scripts/retrieval.check.ts",
+    "voice": "node --experimental-strip-types --no-warnings scripts/voice-lines.ts | ${TTS_PYTHON:-.venv-tts/bin/python} scripts/voice.py",
     "preview": "vite preview"
   },
   "dependencies": {
